@@ -1518,7 +1518,7 @@ let ComposerPost = memo(function ComposerPost({
     ? isFirstPost
       ? l`Write your reply`
       : l`Add another post`
-    : l`What's up?`
+    : l`What’s up?`
   const discardPromptControl = Prompt.usePromptControl()
 
   const dispatchPost = useCallback(
