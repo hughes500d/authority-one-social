@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef} from 'react'
-import {ActivityIndicator, StyleSheet} from 'react-native'
+import {ActivityIndicator, StyleSheet, View} from 'react-native'
 import {withSpring} from 'react-native-reanimated'
 import {useFocusEffect} from '@react-navigation/native'
 
@@ -37,8 +37,11 @@ import {
   HomeHeaderModeProvider,
   useHomeHeaderMode,
 } from '#/view/com/util/MainScrollProvider'
+import {Logo} from '#/view/icons/Logo'
 import {NoFeedsPinned} from '#/screens/Home/NoFeedsPinned'
+import {Button, ButtonText} from '#/components/Button'
 import * as Layout from '#/components/Layout'
+import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
 import {useDemoMode} from '#/storage/hooks/demo-mode'
@@ -326,20 +329,38 @@ function HomeScreenReady({
       )}
     </Pager>
   ) : (
-    <Pager
-      testID="homeScreen"
-      onPageSelected={onPageSelected}
-      onPageScrollStateChanged={onPageScrollStateChanged}
-      renderTabBar={renderTabBar}>
-      <FeedPage
-        testID="customFeedPage"
-        isPageFocused
-        isPageAdjacent={false}
-        feed={`feedgen|${PROD_DEFAULT_FEED('whats-hot')}`}
-        renderEmptyState={renderCustomFeedEmptyState}
-        feedInfo={pinnedFeedInfos[0]}
-      />
-    </Pager>
+    // Authority One spike: logged-out home no longer shows Bluesky's
+    // "what's hot" feed (public AppView leak). Sign-in prompt instead.
+    <LoggedOutHome />
+  )
+}
+
+function LoggedOutHome() {
+  const {setShowLoggedOut} = useLoggedOutViewControls()
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        paddingHorizontal: 24,
+        paddingVertical: 80,
+      }}>
+      <Logo width={72} />
+      <Text style={{fontSize: 28, fontWeight: '800'}}>One</Text>
+      <Text style={{fontSize: 16, textAlign: 'center', opacity: 0.7}}>
+        Your social life. Your data. Your agent. In one place.
+      </Text>
+      <Button
+        label="Sign in"
+        size="large"
+        variant="solid"
+        color="primary"
+        onPress={() => setShowLoggedOut(true)}>
+        <ButtonText>Sign in</ButtonText>
+      </Button>
+    </View>
   )
 }
 

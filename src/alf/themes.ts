@@ -4,9 +4,32 @@ import {
   DEFAULT_SUBDUED_PALETTE,
 } from '@bsky.app/alf'
 
+/**
+ * Authority One demo reskin: red primary ramp replacing Bluesky blue.
+ * Lightness steps mirror the original blue ramp.
+ */
+const ONE_RED = {
+  primary_25: '#FFF5F6',
+  primary_50: '#FEE9EB',
+  primary_100: '#FDD2D7',
+  primary_200: '#FBADB6',
+  primary_300: '#F87E8C',
+  primary_400: '#F04E61',
+  primary_500: '#DC2638',
+  primary_600: '#C0182B',
+  primary_700: '#9C1323',
+  primary_800: '#7A0E1C',
+  primary_900: '#570A14',
+  primary_950: '#3F070E',
+  primary_975: '#2C0509',
+}
+
+const ONE_PALETTE = {...DEFAULT_PALETTE, ...ONE_RED}
+const ONE_SUBDUED_PALETTE = {...DEFAULT_SUBDUED_PALETTE, ...ONE_RED}
+
 const DEFAULT_THEMES = createThemes({
-  defaultPalette: DEFAULT_PALETTE,
-  subduedPalette: DEFAULT_SUBDUED_PALETTE,
+  defaultPalette: ONE_PALETTE,
+  subduedPalette: ONE_SUBDUED_PALETTE,
 })
 
 export const themes = {

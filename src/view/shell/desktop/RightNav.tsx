@@ -94,8 +94,11 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         </>
       )}
 
-      {showExploreScreenDuplicatedContent && <SidebarLiveEventFeedsBanner />}
-      {showExploreScreenDuplicatedContent && <SidebarTrendingTopics />}
+      {/* Authority One spike: hidden — sourced from Bluesky public AppView */}
+      {false && showExploreScreenDuplicatedContent && (
+        <SidebarLiveEventFeedsBanner />
+      )}
+      {false && showExploreScreenDuplicatedContent && <SidebarTrendingTopics />}
 
       <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
         {hasSession && (
