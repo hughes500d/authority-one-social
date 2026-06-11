@@ -42,6 +42,8 @@ export class MetricsClient<M extends Record<string, any>> {
     payload: M[E],
     metadata: Record<string, any> = {},
   ) {
+    // Authority One spike: no metrics host configured → no-op
+    if (!env.METRICS_API_HOST) return
     this.start()
 
     const e: Event<M> = {

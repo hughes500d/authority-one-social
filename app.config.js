@@ -45,9 +45,9 @@ module.exports = function (_config) {
   return {
     expo: {
       version: VERSION,
-      name: 'Bluesky',
-      slug: 'bluesky',
-      scheme: 'bluesky',
+      name: 'One',
+      slug: 'one',
+      scheme: 'one',
       owner: 'blueskysocial',
       runtimeVersion: {
         policy: 'appVersion',
