@@ -85,11 +85,20 @@ export function Splash({
             fill="none"
             viewBox="0 0 64 64"
             style={[a.relative, {width: size, height: size * ratio, top: -50}]}>
-            {/* Authority One demo reskin */}
-            <Path fill="#DC2638" d="M32 0a32 32 0 1 1 0 64 32 32 0 0 1 0-64Z" />
+            {/* One brand mark */}
             <Path
+              fill="#E8431F"
+              d="M10 0h44a10 10 0 0 1 10 10v44a10 10 0 0 1-10 10H10A10 10 0 0 1 0 54V10A10 10 0 0 1 10 0Z"
+            />
+            <Path
+              d="M40 10 L28 10 L17 17 L17 26 L26 26 L26 46 L19 46 L19 54 L47 54 L47 46 L40 46 Z"
               fill="#FFFFFF"
-              d="M37 14h-8.4L17.2 21.9l4.4 6.4 7-4.8V50H37V14Z"
+              stroke="#FFFFFF"
+              strokeWidth={5}
+            />
+            <Path
+              d="M40 10 L28 10 L17 17 L17 26 L26 26 L26 46 L19 46 L19 54 L47 54 L47 46 L40 46 Z"
+              fill="#000000"
             />
           </Svg>
         </div>

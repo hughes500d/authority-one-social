@@ -5,27 +5,27 @@ import {
 } from '@bsky.app/alf'
 
 /**
- * Authority One demo reskin: red primary ramp replacing Bluesky blue.
- * Lightness steps mirror the original blue ramp.
+ * Authority One reskin: orange-red primary ramp matched to the One logo
+ * background (#E8431F). Lightness steps mirror the original blue ramp.
  */
-const ONE_RED = {
-  primary_25: '#FFF5F6',
-  primary_50: '#FEE9EB',
-  primary_100: '#FDD2D7',
-  primary_200: '#FBADB6',
-  primary_300: '#F87E8C',
-  primary_400: '#F04E61',
-  primary_500: '#DC2638',
-  primary_600: '#C0182B',
-  primary_700: '#9C1323',
-  primary_800: '#7A0E1C',
-  primary_900: '#570A14',
-  primary_950: '#3F070E',
-  primary_975: '#2C0509',
+const ONE_ORANGE = {
+  primary_25: '#FFF6F3',
+  primary_50: '#FEEAE4',
+  primary_100: '#FDD3C6',
+  primary_200: '#FAAE98',
+  primary_300: '#F58263',
+  primary_400: '#EF5F38',
+  primary_500: '#E8431F',
+  primary_600: '#C93517',
+  primary_700: '#A52A12',
+  primary_800: '#82210E',
+  primary_900: '#5E180A',
+  primary_950: '#441107',
+  primary_975: '#2F0C05',
 }
 
-const ONE_PALETTE = {...DEFAULT_PALETTE, ...ONE_RED}
-const ONE_SUBDUED_PALETTE = {...DEFAULT_SUBDUED_PALETTE, ...ONE_RED}
+const ONE_PALETTE = {...DEFAULT_PALETTE, ...ONE_ORANGE}
+const ONE_SUBDUED_PALETTE = {...DEFAULT_SUBDUED_PALETTE, ...ONE_ORANGE}
 
 const DEFAULT_THEMES = createThemes({
   defaultPalette: ONE_PALETTE,

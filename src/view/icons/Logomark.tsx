@@ -1,16 +1,14 @@
-import Svg, {
-  Circle,
-  Path,
-  type PathProps,
-  type SvgProps,
-} from 'react-native-svg'
+import Svg, {Path, type PathProps, Rect, type SvgProps} from 'react-native-svg'
 
 import {usePalette} from '#/lib/hooks/usePalette'
 
 const ratio = 1
 
+const ONE_NUMERAL =
+  'M40 10 L28 10 L17 17 L17 26 L26 26 L26 46 L19 46 L19 54 L47 54 L47 46 L40 46 Z'
+
 /**
- * Authority One demo reskin: disc-mark with numeral 1.
+ * One brand mark: varsity numeral 1 on brand tile.
  */
 export function Logomark({
   fill,
@@ -27,8 +25,22 @@ export function Logomark({
       {...rest}
       width={size}
       height={Number(size) * ratio}>
-      <Circle cx="32" cy="32" r="32" fill={fill || pal.text.color} />
-      <Path fill="#FFFFFF" d="M37 14h-8.4L17.2 21.9l4.4 6.4 7-4.8V50H37V14Z" />
+      <Rect
+        x="0"
+        y="0"
+        width="64"
+        height="64"
+        rx="10"
+        fill={fill || pal.text.color}
+      />
+      <Path
+        d={ONE_NUMERAL}
+        fill="#FFFFFF"
+        stroke="#FFFFFF"
+        strokeWidth={5}
+        strokeLinejoin="miter"
+      />
+      <Path d={ONE_NUMERAL} fill="#000000" />
     </Svg>
   )
 }

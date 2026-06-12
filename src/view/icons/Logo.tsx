@@ -1,15 +1,14 @@
 import {forwardRef} from 'react'
 import {type TextProps} from 'react-native'
-import Svg, {
-  Circle,
-  Path,
-  type PathProps,
-  type SvgProps,
-} from 'react-native-svg'
+import Svg, {Path, type PathProps, Rect, type SvgProps} from 'react-native-svg'
 
 import {flatten, useTheme} from '#/alf'
 
 const ratio = 1
+
+// Varsity "1" — black numeral with white outline (One brand mark)
+const ONE_NUMERAL =
+  'M40 10 L28 10 L17 17 L17 26 L26 26 L26 46 L19 46 L19 54 L47 54 L47 46 L40 46 Z'
 
 type Props = {
   fill?: PathProps['fill']
@@ -17,7 +16,8 @@ type Props = {
 } & Omit<SvgProps, 'style'>
 
 /**
- * Authority One demo reskin: "One" mark — bold numeral 1 in a solid disc.
+ * One brand mark: varsity numeral 1 (black, white outline) on the brand
+ * orange tile.
  */
 export const Logo = forwardRef(function LogoImpl(props: Props, ref) {
   const t = useTheme()
@@ -40,8 +40,15 @@ export const Logo = forwardRef(function LogoImpl(props: Props, ref) {
       accessibilityHint=""
       {...rest}
       style={[{width: size, height: size * ratio}, styles]}>
-      <Circle cx="32" cy="32" r="32" fill={_fill} />
-      <Path fill="#FFFFFF" d="M37 14h-8.4L17.2 21.9l4.4 6.4 7-4.8V50H37V14Z" />
+      <Rect x="0" y="0" width="64" height="64" rx="10" fill={_fill} />
+      <Path
+        d={ONE_NUMERAL}
+        fill="#FFFFFF"
+        stroke="#FFFFFF"
+        strokeWidth={5}
+        strokeLinejoin="miter"
+      />
+      <Path d={ONE_NUMERAL} fill="#000000" />
     </Svg>
   )
 })
