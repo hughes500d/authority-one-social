@@ -21,11 +21,25 @@ export interface PersonaVoice {
   default?: boolean
 }
 
+/**
+ * A persona's "fictional life" — optional authored backstory the runtime folds into the
+ * agent's character when `enabled`. Owner-authored in the persona editor.
+ */
+export interface PersonaFiction {
+  enabled: boolean
+  backstory?: string
+  homeBase?: string
+  /** Recurring places the persona frequents. */
+  haunts: string[]
+  weeklyRhythm?: string
+}
+
 export interface Persona {
   id: string
   name: string
   voiceId?: string
   personality?: string
+  fiction?: PersonaFiction
 }
 
 /** The full GET /app/personas payload, normalized. */
@@ -56,6 +70,23 @@ function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.length > 0 ? v : undefined
 }
 
+/** Defensively normalize a persona's optional fiction block. */
+export function normalizeFiction(raw: unknown): PersonaFiction | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const f = raw as Record<string, unknown>
+  return {
+    enabled: f.enabled === true,
+    backstory: str(f.backstory),
+    homeBase: str(f.homeBase),
+    haunts: Array.isArray(f.haunts)
+      ? f.haunts.filter(
+          (h): h is string => typeof h === 'string' && h.trim().length > 0,
+        )
+      : [],
+    weeklyRhythm: str(f.weeklyRhythm),
+  }
+}
+
 /** Normalize one raw persona object defensively. Returns null if it has no id. */
 function normalizePersona(raw: unknown): Persona | null {
   if (!raw || typeof raw !== 'object') return null
@@ -67,6 +98,7 @@ function normalizePersona(raw: unknown): Persona | null {
     name: str(r.name) ?? id,
     voiceId: str(r.voiceId),
     personality: typeof r.personality === 'string' ? r.personality : undefined,
+    fiction: normalizeFiction(r.fiction),
   }
 }
 
@@ -219,12 +251,17 @@ export function updatePersona(input: {
   name?: string
   voiceId?: string
   personality?: string
+  /** The persona's fictional life; the runtime accepts it on the update endpoint. */
+  fiction?: PersonaFiction
 }): Promise<PersonaWriteResult> {
   return postJson(PERSONAS_UPDATE_ENDPOINT, {
     id: input.id,
     name: input.name,
     voiceId: input.voiceId,
     personality: input.personality,
+    // Only include fiction when provided, so personas without authored fiction keep
+    // their exact prior update payload.
+    ...(input.fiction ? {fiction: input.fiction} : {}),
   })
 }
 
