@@ -4,6 +4,7 @@ import {
   createPersona,
   deletePersona,
   fetchPersonas,
+  type PersonaFiction,
   type PersonasState,
   setActivePersona,
   updatePersona,
@@ -54,6 +55,7 @@ export function useUpdatePersonaMutation() {
       name?: string
       voiceId?: string
       personality?: string
+      fiction?: PersonaFiction
     }) => updatePersona(input),
     onSuccess: invalidate,
   })
