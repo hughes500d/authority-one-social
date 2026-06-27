@@ -7,6 +7,7 @@ import {useNavigation} from '@react-navigation/native'
 import {HITSLOP_30} from '#/lib/constants'
 import {type NavigationProp} from '#/lib/routes/types'
 import {useSetDrawerOpen} from '#/state/shell'
+import {useSkinHeadingFont} from '#/state/skin'
 import {useIsWithinSplitView} from '#/screens/Messages/components/splitView/context'
 import {
   atoms as a,
@@ -188,8 +189,13 @@ export function TitleText({
   const {gtMobile} = useBreakpoints()
   const {isWithinLeftPanel} = useIsWithinSplitView()
   const align = useContext(AlignmentContext)
+  // Active skin's display face for screen/section header titles (Fraunces under
+  // the Authority skin). undefined under skins with no display font → the
+  // default Inter path is untouched.
+  const headingFont = useSkinHeadingFont()
   return (
     <Text
+      fontFamilyOverride={headingFont}
       style={[
         isWithinLeftPanel
           ? [a.text_xl, a.font_bold]

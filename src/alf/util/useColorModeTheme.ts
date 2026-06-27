@@ -2,16 +2,19 @@ import {useLayoutEffect} from 'react'
 import {type ColorSchemeName, useColorScheme} from 'react-native'
 import {type ThemeName} from '@bsky.app/alf'
 
+import {type AlfThemeSet, type SkinDefinition} from '#/lib/skins'
 import {useThemePrefs} from '#/state/shell'
+import {useSkin} from '#/state/skin'
 import {dark, dim, light} from '#/alf/themes'
 import {IS_WEB} from '#/env'
 
 export function useColorModeTheme(): ThemeName {
   const theme = useThemeName()
+  const skin = useSkin()
 
   useLayoutEffect(() => {
-    updateDocument(theme)
-  }, [theme])
+    updateDocument(theme, skin)
+  }, [theme, skin])
 
   return theme
 }
@@ -38,7 +41,13 @@ function getThemeName(
   }
 }
 
-function updateDocument(theme: ThemeName) {
+const BASE_ALF_THEMES: AlfThemeSet = {light, dark, dim}
+
+function skinThemeSet(skin: SkinDefinition): AlfThemeSet {
+  return skin.alfThemes ?? BASE_ALF_THEMES
+}
+
+function updateDocument(theme: ThemeName, skin: SkinDefinition) {
   // @ts-ignore web only
   if (IS_WEB && typeof window !== 'undefined') {
     // @ts-ignore web only
@@ -47,21 +56,19 @@ function updateDocument(theme: ThemeName) {
     const meta = window.document.querySelector('meta[name="theme-color"]')
 
     // remove any other color mode classes
-    html.className = html.className.replace(/(theme)--\w+/g, '')
+    html.className = html.className.replace(/(theme|themepack)--[\w-]+/g, '')
     html.classList.add(`theme--${theme}`)
+    html.classList.add(`themepack--${skin.id}`)
     // set color to 'theme-color' meta tag
-    meta?.setAttribute('content', getBackgroundColor(theme))
+    meta?.setAttribute('content', getBackgroundColor(theme, skin))
     window.localStorage.setItem('ALF_THEME', theme)
+    window.localStorage.setItem('ALF_THEME_PACK', skin.id)
   }
 }
 
-export function getBackgroundColor(theme: ThemeName): string {
-  switch (theme) {
-    case 'light':
-      return light.atoms.bg.backgroundColor
-    case 'dark':
-      return dark.atoms.bg.backgroundColor
-    case 'dim':
-      return dim.atoms.bg.backgroundColor
-  }
+export function getBackgroundColor(
+  theme: ThemeName,
+  skin: SkinDefinition,
+): string {
+  return skinThemeSet(skin)[theme].atoms.bg.backgroundColor
 }

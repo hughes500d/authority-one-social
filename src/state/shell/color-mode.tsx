@@ -5,15 +5,18 @@ import * as persisted from '#/state/persisted'
 type StateContext = {
   colorMode: persisted.Schema['colorMode']
   darkTheme: persisted.Schema['darkTheme']
+  themePack: persisted.Schema['themePack']
 }
 type SetContext = {
   setColorMode: (v: persisted.Schema['colorMode']) => void
   setDarkTheme: (v: persisted.Schema['darkTheme']) => void
+  setThemePack: (v: persisted.Schema['themePack']) => void
 }
 
 const stateContext = createContext<StateContext>({
   colorMode: 'system',
   darkTheme: 'dark',
+  themePack: 'default',
 })
 stateContext.displayName = 'ColorModeStateContext'
 const setContext = createContext<SetContext>({} as SetContext)
@@ -22,13 +25,17 @@ setContext.displayName = 'ColorModeSetContext'
 export function Provider({children}: React.PropsWithChildren<{}>) {
   const [colorMode, setColorMode] = useState(() => persisted.get('colorMode'))
   const [darkTheme, setDarkTheme] = useState(() => persisted.get('darkTheme'))
+  const [themePack, setThemePack] = useState(
+    () => persisted.get('themePack') ?? 'default',
+  )
 
   const stateContextValue = useMemo(
     () => ({
       colorMode,
       darkTheme,
+      themePack,
     }),
-    [colorMode, darkTheme],
+    [colorMode, darkTheme, themePack],
   )
 
   const setContextValue = useMemo(
@@ -41,6 +48,10 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
         setDarkTheme(_darkTheme)
         persisted.write('darkTheme', _darkTheme)
       },
+      setThemePack: (_themePack: persisted.Schema['themePack']) => {
+        setThemePack(_themePack ?? 'default')
+        persisted.write('themePack', _themePack)
+      },
     }),
     [],
   )
@@ -52,9 +63,13 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     const unsub2 = persisted.onUpdate('colorMode', nextColorMode => {
       setColorMode(nextColorMode)
     })
+    const unsub3 = persisted.onUpdate('themePack', nextThemePack => {
+      setThemePack(nextThemePack ?? 'default')
+    })
     return () => {
       unsub1()
       unsub2()
+      unsub3()
     }
   }, [])
 

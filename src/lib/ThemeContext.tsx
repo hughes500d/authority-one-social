@@ -7,6 +7,9 @@ import {darkTheme, defaultTheme, dimTheme} from './themes'
 
 export type ColorScheme = 'light' | 'dark'
 
+/** @deprecated legacy brand-pack union; skins are now data-driven, see #/lib/skins */
+export type ThemePack = 'default' | 'authorityOne'
+
 export type PaletteColorName =
   | 'default'
   | 'primary'
@@ -81,9 +84,22 @@ export interface Theme {
   typography: Typography
 }
 
+/** Optional skin overlay of the legacy themes. `undefined` = the base themes. */
+export type LegacyThemeOverride = {
+  default: Theme
+  dark: Theme
+  dim: Theme
+}
+
 export interface ThemeProviderProps {
   children?: ReactNode
   theme: ThemeName
+  /**
+   * Active skin's legacy theme set (from #/lib/skins). When omitted, the base
+   * themes are used -- so plain `<ThemeProvider theme="dark">` callers are
+   * unaffected.
+   */
+  themes?: LegacyThemeOverride
 }
 
 export const ThemeContext = createContext<Theme>(defaultTheme)
@@ -91,24 +107,30 @@ ThemeContext.displayName = 'ThemeContext'
 
 export const useTheme = () => useContext(ThemeContext)
 
-function getTheme(theme: ThemeName) {
+function getTheme(theme: ThemeName, themes?: LegacyThemeOverride) {
+  const set: LegacyThemeOverride = themes ?? {
+    default: defaultTheme,
+    dark: darkTheme,
+    dim: dimTheme,
+  }
   switch (theme) {
     case 'light':
-      return defaultTheme
+      return set.default
     case 'dim':
-      return dimTheme
+      return set.dim
     case 'dark':
-      return darkTheme
+      return set.dark
     default:
-      return defaultTheme
+      return set.default
   }
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   theme,
+  themes,
   children,
 }) => {
-  const themeValue = getTheme(theme)
+  const themeValue = getTheme(theme, themes)
 
   return (
     <ThemeContext.Provider value={themeValue}>{children}</ThemeContext.Provider>

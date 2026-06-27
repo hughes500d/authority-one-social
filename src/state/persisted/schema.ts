@@ -49,6 +49,14 @@ export type PersistedCurrentAccount = z.infer<typeof currentAccountSchema>
 const schema = z.object({
   colorMode: z.enum(['system', 'light', 'dark']),
   darkTheme: z.enum(['dim', 'dark']).optional(),
+  // Authority One brand pack — additive overlay on top of light/dark/dim.
+  // @deprecated superseded by `activeSkin`; kept for back-compat reads and as a
+  // one-time seed for installs that predate the skin registry.
+  themePack: z.enum(['default', 'authorityOne']).optional(),
+  // Active skin id (see #/lib/skins). Free-form string on purpose: new skins can
+  // be registered without a schema change, and unknown ids resolve to the
+  // default skin at the registry boundary.
+  activeSkin: z.string().optional(),
   session: z.object({
     accounts: z.array(accountSchema),
     currentAccount: currentAccountSchema.optional(),
@@ -136,6 +144,7 @@ export type Schema = z.infer<typeof schema>
 export const defaults: Schema = {
   colorMode: 'system',
   darkTheme: 'dim',
+  themePack: 'default',
   session: {
     accounts: [],
     currentAccount: undefined,

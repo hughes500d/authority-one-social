@@ -45,6 +45,8 @@ import {Provider as LoggedOutViewProvider} from '#/state/shell/logged-out'
 import {Provider as OnboardingProvider} from '#/state/shell/onboarding'
 import {Provider as ProgressGuideProvider} from '#/state/shell/progress-guide'
 import {Provider as SelectedFeedProvider} from '#/state/shell/selected-feed'
+import {useSkin} from '#/state/skin'
+import {Provider as SupabaseSessionProvider} from '#/state/supabase'
 import {Provider as HiddenRepliesProvider} from '#/state/threadgate-hidden-replies'
 import {Shell} from '#/view/shell/index'
 import {ThemeProvider as Alf} from '#/alf'
@@ -91,6 +93,7 @@ function InnerApp() {
   const {currentAccount} = useSession()
   const {resumeSession} = useSessionApi()
   const theme = useColorModeTheme()
+  const skin = useSkin()
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -122,8 +125,8 @@ function InnerApp() {
   }, [l])
 
   return (
-    <Alf theme={theme}>
-      <ThemeProvider theme={theme}>
+    <Alf theme={theme} themesOverride={skin.alfThemes}>
+      <ThemeProvider theme={theme} themes={skin.legacyThemes}>
         <ContextMenuProvider>
           <Splash isReady={isReady && hasCheckedLanding}>
             <VideoVolumeProvider>
@@ -217,7 +220,8 @@ function App() {
             <OnboardingProvider>
               <AnalyticsContext>
                 <SessionProvider>
-                  <PrefsStateProvider>
+                  <SupabaseSessionProvider>
+                    <PrefsStateProvider>
                     <I18nProvider>
                       <ShellStateProvider>
                         <ModalStateProvider>
@@ -234,6 +238,7 @@ function App() {
                       </ShellStateProvider>
                     </I18nProvider>
                   </PrefsStateProvider>
+                  </SupabaseSessionProvider>
                 </SessionProvider>
               </AnalyticsContext>
             </OnboardingProvider>

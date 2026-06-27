@@ -15,6 +15,7 @@ import {
 } from '#/lib/routes/types'
 import {useSetThemePrefs, useThemePrefs} from '#/state/shell'
 import {SettingsListItem as AppIconSettingsListItem} from '#/screens/Settings/AppIconSettings/SettingsListItem'
+import {SkinPicker} from '#/screens/Settings/SkinPicker'
 import {type Alf, atoms as a, native, useAlf, useTheme} from '#/alf'
 import * as SegmentedControl from '#/components/forms/SegmentedControl'
 import {type Props as SVGIconProps} from '#/components/icons/common'
@@ -77,6 +78,10 @@ export function AppearanceSettingsScreen({}: Props) {
         </Layout.Header.Outer>
         <Layout.Content>
           <SettingsList.Container>
+            <SkinPicker />
+
+            <SettingsList.Divider />
+
             <AppearanceToggleButtonGroup
               title={_(msg`Color mode`)}
               icon={PhoneIcon}

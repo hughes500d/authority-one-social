@@ -21,6 +21,7 @@ import {
   useProfileFollowMutationQueue,
 } from '#/state/queries/profile'
 import {useRequireAuth, useSession} from '#/state/session'
+import {useSkinHeadingFont} from '#/state/skin'
 import {ProfileMenu} from '#/view/com/profile/ProfileMenu'
 import {atoms as a, platform, useBreakpoints, useTheme} from '#/alf'
 import {SubscribeProfileButton} from '#/components/activity-notifications/SubscribeProfileButton'
@@ -67,6 +68,10 @@ let ProfileHeaderStandard = ({
 }: Props): React.ReactNode => {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
+  // Active skin's display face for the profile display name (Fraunces under the
+  // Authority skin). undefined under skins with no display font → default Inter.
+  // (Mirrors DisplayName.tsx, used by the labeler header.)
+  const headingFont = useSkinHeadingFont()
   const profile =
     useProfileShadow<AppBskyActorDefs.ProfileViewDetailed>(profileUnshadowed)
   const {currentAccount} = useSession()
@@ -142,6 +147,7 @@ let ProfileHeaderStandard = ({
               <Text
                 emoji
                 testID="profileHeaderDisplayName"
+                fontFamilyOverride={headingFont}
                 style={[
                   t.atoms.text,
                   gtMobile ? a.text_4xl : a.text_3xl,
