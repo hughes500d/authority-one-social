@@ -1,5 +1,5 @@
 import {ActivityIndicator, Pressable, View} from 'react-native'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
 import {type Thread} from '#/lib/agent-runtime'
@@ -27,6 +27,7 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'ChatList'>
  */
 export function ChatListScreen({}: Props) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const navigation = useNavigation<NavigationProp>()
   const {data, isLoading} = useThreadsQuery()
 
@@ -49,13 +50,16 @@ export function ChatListScreen({}: Props) {
         </Layout.Header.Content>
         <Layout.Header.Slot>
           <Button
-            label="New group"
+            label={l`New group`}
             size="small"
             variant="solid"
             color="primary"
             onPress={() => navigation.navigate('NewGroup')}>
             <ButtonIcon icon={PlusIcon} />
             <ButtonText>
+              {/* Visible pill label. Wrapped via the Lingui macro; resolves to
+                  "New" from the catalog, and (with babel stripMessageField:false)
+                  degrades to the English source rather than a raw hash. */}
               <Trans>New</Trans>
             </ButtonText>
           </Button>
