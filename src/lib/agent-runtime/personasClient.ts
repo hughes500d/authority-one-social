@@ -62,6 +62,13 @@ export interface PersonaWriteResult {
   ok: boolean
   signedOut: boolean
   error?: string
+  /**
+   * The refreshed personas view the runtime returns on a successful mutation (the same
+   * shape as GET /app/personas). Lets the caller update the cache from the authoritative
+   * response instead of relying on a follow-up refetch. Absent if the runtime didn't
+   * echo a list.
+   */
+  state?: PersonasState
 }
 
 // ── Pure normalizers / helpers (unit-tested) ─────────────────────────────────
@@ -196,7 +203,9 @@ export async function fetchVoices(): Promise<PersonaVoice[]> {
     if (!res.ok) return []
     const json = (await res.json()) as {voices?: unknown}
     return Array.isArray(json?.voices)
-      ? json.voices.map(normalizeVoice).filter((v): v is PersonaVoice => v !== null)
+      ? json.voices
+          .map(normalizeVoice)
+          .filter((v): v is PersonaVoice => v !== null)
       : []
   } catch (e) {
     logger.warn('personas: fetchVoices failed', {safeMessage: String(e)})
@@ -227,10 +236,27 @@ async function postJson(
     if (!res.ok) {
       return {ok: false, signedOut: false, error: `Runtime error ${res.status}`}
     }
-    return {ok: true, signedOut: false}
+    // The runtime echoes the refreshed personas view on success; carry it back so the
+    // caller can update the cache authoritatively (no refetch race). Only attach a state
+    // when the body actually looks like a personas view, so a malformed/empty body can't
+    // wipe the cached list.
+    const json: unknown = await res.json().catch(() => undefined)
+    const hasView =
+      !!json &&
+      typeof json === 'object' &&
+      Array.isArray((json as {personas?: unknown}).personas)
+    return {
+      ok: true,
+      signedOut: false,
+      ...(hasView ? {state: normalizePersonasResponse(json)} : {}),
+    }
   } catch (e) {
     logger.warn('personas: write failed', {safeMessage: String(e)})
-    return {ok: false, signedOut: false, error: errorMessage(e) ?? 'network error'}
+    return {
+      ok: false,
+      signedOut: false,
+      error: errorMessage(e) ?? 'network error',
+    }
   }
 }
 
@@ -265,10 +291,14 @@ export function updatePersona(input: {
   })
 }
 
-export function deletePersona(input: {id: string}): Promise<PersonaWriteResult> {
+export function deletePersona(input: {
+  id: string
+}): Promise<PersonaWriteResult> {
   return postJson(PERSONAS_DELETE_ENDPOINT, {id: input.id})
 }
 
-export function setActivePersona(input: {id: string}): Promise<PersonaWriteResult> {
+export function setActivePersona(input: {
+  id: string
+}): Promise<PersonaWriteResult> {
   return postJson(PERSONAS_ACTIVE_ENDPOINT, {id: input.id})
 }

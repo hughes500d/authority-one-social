@@ -6,6 +6,7 @@ import {
   fetchPersonas,
   type PersonaFiction,
   type PersonasState,
+  type PersonaWriteResult,
   setActivePersona,
   updatePersona,
 } from '#/lib/agent-runtime'
@@ -38,41 +39,78 @@ function useInvalidatePersonas() {
   return () => qc.invalidateQueries({queryKey: createPersonasQueryKey()})
 }
 
+/**
+ * A failed persona write must NOT look like success. The transport never throws (it
+ * returns {ok:false,...}), so throw here on failure: react-query routes it to onError,
+ * the editor keeps the dialog open and shows the error, and nothing silently no-ops.
+ */
+function ensureOk(
+  res: PersonaWriteResult,
+  fallback: string,
+): PersonaWriteResult {
+  if (res.ok) return res
+  if (res.signedOut) throw new Error('Please sign in to manage personas.')
+  throw new Error(res.error ?? fallback)
+}
+
 export function useCreatePersonaMutation() {
+  const qc = useQueryClient()
   const invalidate = useInvalidatePersonas()
   return useMutation({
-    mutationFn: (input: {name: string; voiceId?: string; personality?: string}) =>
-      createPersona(input),
-    onSuccess: invalidate,
+    mutationFn: async (input: {
+      name: string
+      voiceId?: string
+      personality?: string
+    }) => ensureOk(await createPersona(input), 'Could not create the persona.'),
+    onSuccess: res => {
+      // Apply the authoritative refreshed view immediately (no refetch race), then
+      // invalidate so any other observers reconcile too.
+      if (res.state) qc.setQueryData(createPersonasQueryKey(), res.state)
+      void invalidate()
+    },
   })
 }
 
 export function useUpdatePersonaMutation() {
+  const qc = useQueryClient()
   const invalidate = useInvalidatePersonas()
   return useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       id: string
       name?: string
       voiceId?: string
       personality?: string
       fiction?: PersonaFiction
-    }) => updatePersona(input),
-    onSuccess: invalidate,
+    }) => ensureOk(await updatePersona(input), 'Could not save the persona.'),
+    onSuccess: res => {
+      if (res.state) qc.setQueryData(createPersonasQueryKey(), res.state)
+      void invalidate()
+    },
   })
 }
 
 export function useDeletePersonaMutation() {
+  const qc = useQueryClient()
   const invalidate = useInvalidatePersonas()
   return useMutation({
-    mutationFn: (input: {id: string}) => deletePersona(input),
-    onSuccess: invalidate,
+    mutationFn: async (input: {id: string}) =>
+      ensureOk(await deletePersona(input), 'Could not delete the persona.'),
+    onSuccess: res => {
+      if (res.state) qc.setQueryData(createPersonasQueryKey(), res.state)
+      void invalidate()
+    },
   })
 }
 
 export function useSetActivePersonaMutation() {
+  const qc = useQueryClient()
   const invalidate = useInvalidatePersonas()
   return useMutation({
-    mutationFn: (input: {id: string}) => setActivePersona(input),
-    onSuccess: invalidate,
+    mutationFn: async (input: {id: string}) =>
+      ensureOk(await setActivePersona(input), 'Could not switch persona.'),
+    onSuccess: res => {
+      if (res.state) qc.setQueryData(createPersonasQueryKey(), res.state)
+      void invalidate()
+    },
   })
 }

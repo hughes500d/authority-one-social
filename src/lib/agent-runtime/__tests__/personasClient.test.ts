@@ -132,9 +132,7 @@ describe('fetchPersonas', () => {
 
   it('never throws on network error', async () => {
     mockToken.mockResolvedValue('tok')
-    global.fetch = jest.fn(() =>
-      Promise.reject(new Error('offline')),
-    )
+    global.fetch = jest.fn(() => Promise.reject(new Error('offline')))
     const res = await fetchPersonas()
     expect(res.signedOut).toBe(false)
     expect(res.error).toBeDefined()
@@ -174,5 +172,29 @@ describe('CRUD request shaping', () => {
     })
     expect(bodyOf(byUrl('/app/personas/delete')!)).toEqual({id: 'p2'})
     expect(bodyOf(byUrl('/app/personas/active')!)).toEqual({id: 'p1'})
+  })
+
+  it('returns the refreshed state when the runtime echoes a personas view', async () => {
+    mockToken.mockResolvedValue('tok')
+    mockOkJson({
+      personas: [
+        {id: 'p1', name: 'Bob'},
+        {id: 'p2', name: 'Stormy', personality: 'an ice hog'},
+      ],
+      activePersonaId: 'p1',
+      voices: [{voiceId: 'v1', name: 'Bob'}],
+    })
+    const res = await createPersona({name: 'Stormy', personality: 'an ice hog'})
+    expect(res.ok).toBe(true)
+    // The authoritative list comes back so the cache can update without a refetch.
+    expect(res.state?.personas.map(p => p.name)).toEqual(['Bob', 'Stormy'])
+  })
+
+  it('omits state when the runtime body is not a personas view', async () => {
+    mockToken.mockResolvedValue('tok')
+    mockOkJson({ok: true})
+    const res = await setActivePersona({id: 'p1'})
+    expect(res.ok).toBe(true)
+    expect(res.state).toBeUndefined()
   })
 })

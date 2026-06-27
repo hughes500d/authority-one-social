@@ -60,15 +60,29 @@ function EditorInner({
 
   const [name, setName] = useState(persona?.name ?? '')
   const [personality, setPersonality] = useState(persona?.personality ?? '')
-  const [voiceId, setVoiceId] = useState<string | undefined>(
-    persona?.voiceId ?? voices.find(v => v.default)?.voiceId ?? voices[0]?.voiceId,
-  )
+  // Track the chosen voice by its slot INDEX (slots can share a voiceId — see the
+  // picker note). Default to the persona's current voice slot, else the marked
+  // default, else the first slot.
+  const initialVoiceIndex = (() => {
+    if (persona?.voiceId) {
+      const i = voices.findIndex(v => v.voiceId === persona.voiceId)
+      if (i >= 0) return i
+    }
+    const def = voices.findIndex(v => v.default)
+    return def >= 0 ? def : voices.length > 0 ? 0 : -1
+  })()
+  const [voiceIndex, setVoiceIndex] = useState<number>(initialVoiceIndex)
+  const voiceId = voiceIndex >= 0 ? voices[voiceIndex]?.voiceId : undefined
   // Fictional life — authored only on an existing persona (wired to /app/personas/update).
   const [fiction, setFiction] = useState(() => fictionDraftFromPersona(persona))
   const [haunt, setHaunt] = useState('')
 
   const trimmedName = name.trim()
-  const canSave = trimmedName.length > 0 && !create.isPending && !update.isPending
+  const canSave =
+    trimmedName.length > 0 && !create.isPending && !update.isPending
+  // Surface a failed save (the mutation throws on a non-ok runtime response) instead
+  // of silently closing the dialog with nothing saved.
+  const saveError = (isEdit ? update.error : create.error)?.message
 
   const onSave = () => {
     if (!canSave) return
@@ -85,7 +99,10 @@ function EditorInner({
         {onSuccess: done},
       )
     } else {
-      create.mutate({name: trimmedName, voiceId, personality}, {onSuccess: done})
+      create.mutate(
+        {name: trimmedName, voiceId, personality},
+        {onSuccess: done},
+      )
     }
   }
 
@@ -96,8 +113,7 @@ function EditorInner({
   }
 
   return (
-    <Dialog.ScrollableInner
-      label={isEdit ? 'Edit persona' : 'Create persona'}>
+    <Dialog.ScrollableInner label={isEdit ? 'Edit persona' : 'Create persona'}>
       <Dialog.Header>
         <Dialog.HeaderText>
           {isEdit ? <Trans>Edit persona</Trans> : <Trans>Create persona</Trans>}
@@ -129,16 +145,21 @@ function EditorInner({
             </Text>
           ) : (
             <View style={[a.gap_2xs]}>
-              {voices.map(v => {
-                const selected = v.voiceId === voiceId
+              {voices.map((v, index) => {
+                // Select by slot INDEX, not voiceId: the runtime can offer several
+                // distinct named slots that share the same underlying voiceId (e.g.
+                // "Voice 1/2/3 (Bob)"). Keying selection on voiceId would highlight
+                // every slot at once and make taps appear to do nothing; keying the
+                // React list on voiceId would also collide. Index is unique per slot.
+                const selected = index === voiceIndex
                 return (
                   <Pressable
-                    key={v.voiceId}
+                    key={`${index}:${v.voiceId}`}
                     accessibilityRole="button"
                     accessibilityLabel={`Use voice ${v.name}`}
                     accessibilityHint="Selects this voice for the persona"
                     accessibilityState={{selected}}
-                    onPress={() => setVoiceId(v.voiceId)}
+                    onPress={() => setVoiceIndex(index)}
                     style={[
                       a.flex_row,
                       a.align_center,
@@ -203,8 +224,8 @@ function EditorInner({
               </Text>
               <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
                 <Trans>
-                  An optional authored backstory and routine. The agent draws on it
-                  when “bring to life” is on.
+                  An optional authored backstory and routine. The agent draws on
+                  it when “bring to life” is on.
                 </Trans>
               </Text>
             </View>
@@ -384,6 +405,12 @@ function EditorInner({
           </View>
         ) : null}
 
+        {saveError ? (
+          <Text style={[a.text_sm, {color: t.palette.negative_500}]}>
+            {saveError}
+          </Text>
+        ) : null}
+
         <Button
           label={isEdit ? 'Save changes' : 'Create persona'}
           size="large"
@@ -392,7 +419,11 @@ function EditorInner({
           disabled={!canSave}
           onPress={onSave}>
           <ButtonText>
-            {isEdit ? <Trans>Save changes</Trans> : <Trans>Create persona</Trans>}
+            {isEdit ? (
+              <Trans>Save changes</Trans>
+            ) : (
+              <Trans>Create persona</Trans>
+            )}
           </ButtonText>
         </Button>
       </View>

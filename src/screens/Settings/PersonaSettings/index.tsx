@@ -1,6 +1,6 @@
 import {useState} from 'react'
 import {ActivityIndicator, View} from 'react-native'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {type Persona} from '#/lib/agent-runtime'
 import {
@@ -22,6 +22,7 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
 import * as Prompt from '#/components/Prompt'
+import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {PersonaEditorDialog} from './PersonaEditorDialog'
 
@@ -34,6 +35,7 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'PersonaSettings'>
  * gracefully when the runtime persona endpoints aren't reachable yet.
  */
 export function PersonaSettingsScreen({}: Props) {
+  const {t: l} = useLingui()
   const {data, isLoading, error} = usePersonasQuery()
   const setActive = useSetActivePersonaMutation()
   const del = useDeletePersonaMutation()
@@ -92,7 +94,17 @@ export function PersonaSettingsScreen({}: Props) {
                   voices.find(v => v.voiceId === p.voiceId)?.name ?? p.voiceId
                 }
                 switching={setActive.isPending}
-                onSetActive={() => setActive.mutate({id: p.id})}
+                onSetActive={() =>
+                  setActive.mutate(
+                    {id: p.id},
+                    {
+                      onError: () =>
+                        Toast.show(l`Could not switch persona.`, {
+                          type: 'error',
+                        }),
+                    },
+                  )
+                }
                 onEdit={() => openEdit(p)}
                 onDelete={canDelete ? () => confirmDelete(p) : undefined}
               />
@@ -101,7 +113,9 @@ export function PersonaSettingsScreen({}: Props) {
 
           {error && data ? (
             <Text style={[a.px_lg, a.pt_sm, a.text_sm, {color: '#cc2827'}]}>
-              <Trans>Couldn’t refresh personas. Showing the last known list.</Trans>
+              <Trans>
+                Couldn’t refresh personas. Showing the last known list.
+              </Trans>
             </Text>
           ) : null}
 
@@ -139,7 +153,14 @@ export function PersonaSettingsScreen({}: Props) {
         confirmButtonCta="Delete"
         confirmButtonColor="negative"
         onConfirm={() => {
-          if (pendingDelete) del.mutate({id: pendingDelete.id})
+          if (pendingDelete)
+            del.mutate(
+              {id: pendingDelete.id},
+              {
+                onError: () =>
+                  Toast.show(l`Could not delete the persona.`, {type: 'error'}),
+              },
+            )
         }}
       />
     </Layout.Screen>
@@ -182,7 +203,12 @@ function PersonaRow({
                 {paddingVertical: 2, backgroundColor: t.palette.primary_50},
               ]}>
               <CheckIcon size="xs" fill={t.palette.primary_600} />
-              <Text style={[a.text_xs, a.font_bold, {color: t.palette.primary_700}]}>
+              <Text
+                style={[
+                  a.text_xs,
+                  a.font_bold,
+                  {color: t.palette.primary_700},
+                ]}>
                 <Trans>Active</Trans>
               </Text>
             </View>
@@ -250,9 +276,9 @@ function UnavailableNotice() {
       </Text>
       <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
         <Trans>
-          Sign in to your Authority One account and make sure the agent runtime is
-          reachable. Your agent keeps working with its default name and voice in the
-          meantime.
+          Sign in to your Authority One account and make sure the agent runtime
+          is reachable. Your agent keeps working with its default name and voice
+          in the meantime.
         </Trans>
       </Text>
     </View>
@@ -267,7 +293,9 @@ function EmptyNotice() {
         <Trans>No personas yet</Trans>
       </Text>
       <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-        <Trans>Create a persona to give your agent a name, voice, and personality.</Trans>
+        <Trans>
+          Create a persona to give your agent a name, voice, and personality.
+        </Trans>
       </Text>
     </View>
   )
