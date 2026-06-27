@@ -9,6 +9,7 @@ export {
   AGENT_RUNTIME_BASE_URL,
   BOB_VOICE_ID,
   CHAT_ENDPOINT,
+  CHAT_IMAGE_UPLOAD_ENDPOINT,
   DEFAULT_AGENT,
   HISTORY_ENDPOINT,
   TTS_ENDPOINT,
@@ -27,6 +28,10 @@ export {
   postFeedSignals,
 } from './feedClient'
 export {fetchHistory, type HistoryResult} from './historyClient'
+export {
+  type ChatImageToUpload,
+  uploadChatImage,
+} from './imageUploadClient'
 export {
   createPersona,
   deletePersona,

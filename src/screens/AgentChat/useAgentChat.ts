@@ -23,10 +23,14 @@ export interface UseAgentChat {
    * "blank chat" before their recent thread hydrates.
    */
   isHydrating: boolean
-  /** Send a user message and stream the reply. `onReplyChunk` lets the caller pipe text to TTS. */
+  /**
+   * Send a user message and stream the reply. `onReplyChunk` lets the caller pipe
+   * text to TTS. `images` are hosted R2 URLs (already uploaded) to attach to the turn;
+   * a turn may be image-only (empty text) when images are present.
+   */
   send: (
     text: string,
-    opts?: {onReplyChunk?: (fullText: string) => void},
+    opts?: {onReplyChunk?: (fullText: string) => void; images?: string[]},
   ) => void
   /** Cancel the in-flight turn (e.g. user starts a new message / barge-in). */
   abort: () => void
@@ -59,7 +63,11 @@ export function useAgentChat(agent?: string): UseAgentChat {
   // Set only on a TRANSPORT failure (see UseAgentChat.transportError). The text +
   // history of that failed turn live in `retryRef` so `retry` can re-run it.
   const [transportError, setTransportError] = useState(false)
-  const retryRef = useRef<{text: string; history: TurnHistory} | null>(null)
+  const retryRef = useRef<{
+    text: string
+    history: TurnHistory
+    images?: string[]
+  } | null>(null)
   const abortRef = useRef<null | (() => void)>(null)
 
   // HYDRATE ON MOUNT: the screen keeps messages only in transient React state, so a
@@ -83,7 +91,6 @@ export function useAgentChat(agent?: string): UseAgentChat {
       cancelled = true
     }
     // Mount-only: the empty-list guard makes a re-run safe, but we want a single load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // Mirror of messages for building the history payload without stale closures.
   // Written in an effect (not during render) so we never mutate a ref mid-render;
@@ -115,13 +122,13 @@ export function useAgentChat(agent?: string): UseAgentChat {
       text: string,
       history: TurnHistory,
       assistantId: string,
-      opts?: {onReplyChunk?: (fullText: string) => void},
+      opts?: {onReplyChunk?: (fullText: string) => void; images?: string[]},
     ) => {
       setIsStreaming(true)
 
       let acc = ''
       const {abort} = streamChat(
-        {text, history, agent},
+        {text, history, agent, images: opts?.images},
         {
           onTextDelta: delta => {
             acc += delta
@@ -155,7 +162,7 @@ export function useAgentChat(agent?: string): UseAgentChat {
               // placeholder, stash the turn for retry, and let the screen show a
               // quiet "tap to retry" affordance instead.
               setMessages(prev => prev.filter(m => m.id !== assistantId))
-              retryRef.current = {text, history}
+              retryRef.current = {text, history, images: opts?.images}
               setTransportError(true)
             } else {
               // SERVER/auth-reported error: keep it visible as a real message so the
@@ -178,9 +185,14 @@ export function useAgentChat(agent?: string): UseAgentChat {
   )
 
   const send = useCallback(
-    (text: string, opts?: {onReplyChunk?: (fullText: string) => void}) => {
+    (
+      text: string,
+      opts?: {onReplyChunk?: (fullText: string) => void; images?: string[]},
+    ) => {
       const trimmed = text.trim()
-      if (!trimmed || isStreaming) return
+      const images = opts?.images ?? []
+      // Allow an image-only turn (no text) when at least one image is attached.
+      if ((!trimmed && images.length === 0) || isStreaming) return
 
       // A new turn clears any prior transport-failure affordance (and its retry ctx).
       setTransportError(false)
@@ -191,6 +203,7 @@ export function useAgentChat(agent?: string): UseAgentChat {
         role: 'user',
         text: trimmed,
         createdAt: Date.now(),
+        ...(images.length > 0 ? {mediaUrls: images} : {}),
       }
       const assistantId = newId('a')
       const assistantMsg: ChatMessage = {
@@ -230,7 +243,7 @@ export function useAgentChat(agent?: string): UseAgentChat {
       createdAt: Date.now(),
     }
     setMessages(prev => [...prev, assistantMsg])
-    runTurn(ctx.text, ctx.history, assistantId)
+    runTurn(ctx.text, ctx.history, assistantId, {images: ctx.images})
   }, [isStreaming, runTurn])
 
   const abort = useCallback(() => {

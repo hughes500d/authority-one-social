@@ -11,6 +11,14 @@ export const AGENT_RUNTIME_BASE_URL =
 export const CHAT_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/chat`
 
 /**
+ * Chat image upload endpoint (owner-scoped). The app uploads a picked image here;
+ * the runtime hosts it in R2 (the same `putRawImage` path the inbound SMS/MMS media
+ * uses) and returns the public URL, which the app then sends with the chat turn so
+ * the existing vision pipeline processes it. See MEDIA-IN-CHAT-SCOPE.md.
+ */
+export const CHAT_IMAGE_UPLOAD_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/chat/image`
+
+/**
  * History read-back endpoint. GET returns the last ~50 turns of the owner's rolling
  * (cross-channel) conversation window so the chat screen can repopulate after the user
  * navigates away and back (messages otherwise live only in transient React state). See

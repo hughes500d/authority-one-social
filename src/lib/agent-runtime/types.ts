@@ -142,4 +142,10 @@ export interface SendMessageRequest {
   history?: {role: ChatRole; text: string}[]
   /** Which agent to talk to, e.g. "ada". Defaults server-side if omitted. */
   agent?: string
+  /**
+   * Public image URLs (hosted in R2 via the upload endpoint) to attach to this turn.
+   * The runtime threads them into the same `media` array its SMS/MMS path builds, so
+   * the existing vision turn processes them. Omitted/empty for text-only turns.
+   */
+  images?: string[]
 }

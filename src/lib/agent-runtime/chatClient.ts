@@ -141,6 +141,9 @@ export function streamChat(
           text: req.text,
           history: req.history ?? [],
           agent: req.agent ?? DEFAULT_AGENT,
+          // Attach hosted image URLs only when present, so text-only turns keep
+          // their exact prior wire shape.
+          ...(req.images && req.images.length > 0 ? {images: req.images} : {}),
         }),
         signal: controller.signal,
       })

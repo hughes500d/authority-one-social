@@ -7,15 +7,18 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import {Image} from 'expo-image'
 import {useNavigation} from '@react-navigation/native'
 
 import {
   DEFAULT_AGENT,
   pickActiveVoiceId,
   pickAgentHeaderName,
+  uploadChatImage,
 } from '#/lib/agent-runtime'
 import {useBottomBarOffset} from '#/lib/hooks/useBottomBarOffset'
 import {useIsKeyboardVisible} from '#/lib/hooks/useIsKeyboardVisible'
+import {openPicker} from '#/lib/media/picker'
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
@@ -25,12 +28,16 @@ import {usePersonasQuery} from '#/state/queries/personas'
 import {useSupabaseSession} from '#/state/supabase'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {Image_Stroke2_Corner0_Rounded as ImageIcon} from '#/components/icons/Image'
 import {Microphone_Stroke2_Corner0_Rounded as MicIcon} from '#/components/icons/Microphone'
 import {PaperPlaneVertical_Filled_Stroke2_Corner1_Rounded as SendIcon} from '#/components/icons/PaperPlane'
 import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as SpeakerIcon} from '#/components/icons/Speaker'
+import {TimesLarge_Stroke2_Corner0_Rounded as CloseIcon} from '#/components/icons/Times'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
+import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {canSend, type ChatAttachment, imagesForSend} from './attachment'
 import {
   COMPOSER_KEYBOARD_VERTICAL_OFFSET,
   composerBottomOffset,
@@ -88,6 +95,38 @@ export function AgentChatScreen({route}: Props) {
     retry,
   } = useAgentChat(agent)
   const [input, setInput] = useState('')
+  // Single in-progress image attachment for the next turn (one image per message).
+  const [attachment, setAttachment] = useState<ChatAttachment | null>(null)
+
+  // Pick an image and upload it to R2 immediately, showing a local preview while the
+  // upload is in flight. Resilient: a cancelled picker or a failed upload never throws
+  // or blocks the composer — a failed upload leaves a removable "failed" preview.
+  const onAttach = useCallback(async () => {
+    try {
+      const picked = await openPicker({selectionLimit: 1})
+      const img = picked?.[0]
+      if (!img) return
+      setAttachment({previewUri: img.path, mime: img.mime, uploading: true})
+      const url = await uploadChatImage({uri: img.path, mime: img.mime})
+      setAttachment(prev =>
+        prev
+          ? url
+            ? {...prev, uploading: false, url}
+            : {...prev, uploading: false, failed: true}
+          : prev,
+      )
+      if (!url) {
+        Toast.show('Could not attach image. Remove it and try again.', {
+          type: 'warning',
+        })
+      }
+    } catch {
+      // Picker cancelled / permission denied — never crash the composer.
+      setAttachment(null)
+    }
+  }, [])
+
+  const removeAttachment = useCallback(() => setAttachment(null), [])
 
   // ~20% larger title than the shared header default, applied only to this screen.
   const headerTitleStyle = {fontSize: agentChatHeaderTitleSize(gtMobile)}
@@ -118,14 +157,15 @@ export function AgentChatScreen({route}: Props) {
 
   const doSend = useCallback(
     (text: string) => {
-      const trimmed = text.trim()
-      if (!trimmed) return
+      if (!canSend(text, attachment, isStreaming)) return
+      const images = imagesForSend(attachment)
       // Sending interrupts any ongoing agent speech (barge-in via text, too).
       voice.stopSpeaking()
       setInput('')
-      send(trimmed)
+      setAttachment(null)
+      send(text.trim(), {images: images.length > 0 ? images : undefined})
     },
-    [send, voice],
+    [send, voice, attachment, isStreaming],
   )
 
   // Speak the assistant reply once a TEXT turn finishes streaming (if autoSpeak on).
@@ -336,6 +376,51 @@ export function AgentChatScreen({route}: Props) {
 
         {/* Composer — pinned to bottom, aligned to the centered column. */}
         <View style={[a.border_t, t.atoms.border_contrast_low]}>
+          {/* Pending image attachment preview — thumbnail with an upload spinner /
+              failure state and a remove button. Sits above the input row. */}
+          {attachment ? (
+            <View style={[a.px_md, a.pt_sm, a.w_full, centerColumn]}>
+              <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+                <View>
+                  <Image
+                    source={{uri: attachment.previewUri}}
+                    style={[a.rounded_sm, {width: 56, height: 56}]}
+                    contentFit="cover"
+                    accessibilityIgnoresInvertColors
+                    alt="Attached image preview"
+                  />
+                  {attachment.uploading ? (
+                    <View
+                      style={[
+                        a.absolute,
+                        a.inset_0,
+                        a.align_center,
+                        a.justify_center,
+                        a.rounded_sm,
+                        {backgroundColor: 'rgba(0,0,0,0.35)'},
+                      ]}>
+                      <Loader size="sm" />
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[a.flex_1, a.text_sm, t.atoms.text_contrast_medium]}>
+                  {attachment.uploading
+                    ? 'Uploading image…'
+                    : attachment.failed
+                      ? 'Upload failed — remove and try again'
+                      : 'Image ready to send'}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove attached image"
+                  accessibilityHint=""
+                  onPress={removeAttachment}
+                  style={[a.p_sm, a.rounded_full]}>
+                  <CloseIcon size="sm" fill={t.atoms.text_contrast_medium.color} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
           <View
             style={[
               a.flex_row,
@@ -361,6 +446,21 @@ export function AgentChatScreen({route}: Props) {
               <ButtonIcon icon={MicIcon} />
             </Button>
           ) : null}
+
+          {/* Attach an image. Disabled in voice mode, while a turn streams, or when an
+              attachment is already pending (one image per message). */}
+          <Button
+            label="Attach image"
+            size="large"
+            shape="round"
+            variant="solid"
+            color="secondary"
+            disabled={voiceModeOn || isStreaming || attachment !== null}
+            onPress={() => {
+              void onAttach()
+            }}>
+            <ButtonIcon icon={ImageIcon} />
+          </Button>
 
           <TextInput
             accessibilityLabel="Text input field"
@@ -403,7 +503,7 @@ export function AgentChatScreen({route}: Props) {
               shape="round"
               variant="solid"
               color="primary"
-              disabled={!input.trim()}
+              disabled={!canSend(input, attachment, isStreaming)}
               onPress={() => doSend(input)}>
               <ButtonIcon icon={SendIcon} />
             </Button>
