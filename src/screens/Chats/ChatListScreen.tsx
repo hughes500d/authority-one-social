@@ -57,10 +57,13 @@ export function ChatListScreen({}: Props) {
             onPress={() => navigation.navigate('NewGroup')}>
             <ButtonIcon icon={PlusIcon} />
             <ButtonText>
-              {/* Visible pill label. Wrapped via the Lingui macro; resolves to
-                  "New" from the catalog, and (with babel stripMessageField:false)
-                  degrades to the English source rather than a raw hash. */}
-              <Trans>New</Trans>
+              {/* Render the English literal directly — NOT <Trans>. This pill has
+                  repeatedly regressed to a raw Lingui message-id hash across builds
+                  (stale compiled catalog / Metro transform cache), and a one-word nav
+                  label must never garble. A literal can't depend on the catalog, so it
+                  can't become a hash. "New" stays translatable elsewhere (used in 3
+                  other components) and the a11y label above is still localized. */}
+              New
             </ButtonText>
           </Button>
         </Layout.Header.Slot>

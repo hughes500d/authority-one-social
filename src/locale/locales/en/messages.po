@@ -918,7 +918,7 @@ msgid "Abusive or discriminatory behavior"
 msgstr ""
 
 #. Accept a chat request
-#: src/screens/Chats/ChatListScreen.tsx:255
+#: src/screens/Chats/ChatListScreen.tsx:258
 #: src/screens/Messages/components/RequestButtons.tsx:287
 msgid "Accept"
 msgstr ""
@@ -1145,7 +1145,7 @@ msgstr "Add automation label to account"
 msgid "Add emoji reaction"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:498
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:508
 msgid "Add entry"
 msgstr "Add entry"
 
@@ -1633,7 +1633,7 @@ msgstr ""
 msgid "An mockup of a iPhone showing the Bluesky app open to the profile of a verified user with a blue checkmark next to their display name."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:518
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:528
 msgid "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 msgstr "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 
@@ -1963,7 +1963,7 @@ msgstr ""
 msgid "Back to Chats"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:574
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:584
 msgid "Backstory"
 msgstr "Backstory"
 
@@ -2228,7 +2228,7 @@ msgstr ""
 msgid "Breaking site rules"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:544
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:554
 msgid "Bring this persona to life"
 msgstr "Bring this persona to life"
 
@@ -3552,8 +3552,8 @@ msgid "Create or modify an invite link for this group chat"
 msgstr "Create or modify an invite link for this group chat"
 
 #: src/screens/Settings/PersonaSettings/index.tsx:132
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:266
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:712
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:268
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:722
 msgid "Create persona"
 msgstr "Create persona"
 
@@ -3657,7 +3657,7 @@ msgstr ""
 msgid "Debug panel"
 msgstr ""
 
-#: src/screens/Chats/ChatListScreen.tsx:266
+#: src/screens/Chats/ChatListScreen.tsx:269
 msgid "Decline"
 msgstr "Decline"
 
@@ -3665,7 +3665,7 @@ msgstr "Decline"
 msgid "Decline this language suggestion"
 msgstr "Decline this language suggestion"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:389
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:396
 msgid "Deep lore the agent pulls in only when relevant. The summary is always included; entries are retrieved as needed — so this can be long without bloating every message."
 msgstr "Deep lore the agent pulls in only when relevant. The summary is always included; entries are retrieved as needed — so this can be long without bloating every message."
 
@@ -3831,7 +3831,7 @@ msgstr ""
 msgid "Detach quote post?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:473
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:483
 msgid "Details the agent can reference"
 msgstr "Details the agent can reference"
 
@@ -4289,7 +4289,7 @@ msgstr "Edit name"
 msgid "Edit People"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:266
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:268
 msgid "Edit persona"
 msgstr "Edit persona"
 
@@ -4532,7 +4532,7 @@ msgstr ""
 msgid "Entertainment"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:417
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:427
 msgid "Entries"
 msgstr "Entries"
 
@@ -5117,7 +5117,7 @@ msgstr ""
 msgid "Fetch update"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:515
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:525
 msgid "Fictional life"
 msgstr "Fictional life"
 
@@ -5873,11 +5873,11 @@ msgstr "Group name is too long. {MAX_GROUP_NAME_GRAPHEME_LENGTH, plural, other {
 msgid "Group renamed."
 msgstr "Group renamed."
 
-#: src/screens/Chats/ChatListScreen.tsx:121
+#: src/screens/Chats/ChatListScreen.tsx:124
 msgid "Groups"
 msgstr "Groups"
 
-#: src/screens/Chats/ChatListScreen.tsx:145
+#: src/screens/Chats/ChatListScreen.tsx:148
 msgid "Groups are unavailable right now."
 msgstr "Groups are unavailable right now."
 
@@ -5950,7 +5950,7 @@ msgstr ""
 msgid "Hate speech"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:608
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:618
 msgid "Haunts"
 msgstr "Haunts"
 
@@ -6164,7 +6164,7 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:592
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:602
 msgid "Home base"
 msgstr "Home base"
 
@@ -6190,7 +6190,7 @@ msgstr ""
 msgid "How should we open this link?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:374
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:376
 msgid "How the agent should sound and behave. This is the always-on soul — keep it short."
 msgstr "How the agent should sound and behave. This is the always-on soul — keep it short."
 
@@ -6225,7 +6225,7 @@ msgstr ""
 msgid "I'm on Bluesky as {0} - come find me! https://bsky.app/download"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:283
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:285
 msgid "Identity"
 msgstr "Identity"
 
@@ -6601,11 +6601,11 @@ msgstr ""
 msgid "Invited"
 msgstr "Invited"
 
-#: src/screens/Chats/ChatListScreen.tsx:244
+#: src/screens/Chats/ChatListScreen.tsx:247
 msgid "Invited you to join"
 msgstr "Invited you to join"
 
-#: src/screens/Chats/ChatListScreen.tsx:108
+#: src/screens/Chats/ChatListScreen.tsx:111
 msgid "Invites"
 msgstr "Invites"
 
@@ -6685,7 +6685,7 @@ msgstr ""
 msgid "Keep me posted"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:462
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:472
 msgid "Keywords (comma-separated)"
 msgstr "Keywords (comma-separated)"
 
@@ -6694,7 +6694,7 @@ msgstr "Keywords (comma-separated)"
 msgid "Kick member"
 msgstr "Kick member"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:386
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:393
 msgid "Knowledge base"
 msgstr "Knowledge base"
 
@@ -7276,7 +7276,7 @@ msgstr ""
 msgid "Make sure this is where you intend to go!"
 msgstr ""
 
-#: src/screens/Chats/ChatListScreen.tsx:218
+#: src/screens/Chats/ChatListScreen.tsx:221
 msgid "Manage"
 msgstr "Manage"
 
@@ -7692,7 +7692,7 @@ msgid "My starter pack"
 msgstr "My starter pack"
 
 #: src/components/dialogs/lists/CreateOrEditListDialog.tsx:416
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:295
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:297
 msgid "Name"
 msgstr ""
 
@@ -7735,7 +7735,6 @@ msgid "Nevermind, create a handle for me"
 msgstr ""
 
 #: src/components/dialogs/nuxs/GroupChatsAnnouncement.tsx:171
-#: src/screens/Chats/ChatListScreen.tsx:63
 #: src/screens/Search/modules/ExploreTrendingTopics.tsx:184
 #: src/view/com/profile/ProfileMenu.tsx:403
 msgid "New"
@@ -7944,7 +7943,7 @@ msgstr ""
 msgid "No drafts yet"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:421
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:431
 msgid "No entries yet. Add detailed lore the agent can reference."
 msgstr "No entries yet. Add detailed lore the agent can reference."
 
@@ -7970,7 +7969,7 @@ msgstr "No GIFs found for \"{query}\"."
 msgid "No GIFs to show right now. Try again in a moment."
 msgstr "No GIFs to show right now. Try again in a moment."
 
-#: src/screens/Chats/ChatListScreen.tsx:147
+#: src/screens/Chats/ChatListScreen.tsx:150
 msgid "No groups yet. Tap “New” to start one."
 msgstr "No groups yet. Tap “New” to start one."
 
@@ -8139,7 +8138,7 @@ msgstr "No translation received from your device."
 msgid "No video posts yet"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:313
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:315
 msgid "No voices available yet."
 msgstr "No voices available yet."
 
@@ -8894,7 +8893,7 @@ msgstr ""
 msgid "Persona"
 msgstr "Persona"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:357
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:359
 msgid "Personality"
 msgstr "Personality"
 
@@ -9752,7 +9751,7 @@ msgstr "Remove caption file"
 msgid "Remove embed"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:450
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:460
 msgid "Remove entry"
 msgstr "Remove entry"
 
@@ -10349,7 +10348,7 @@ msgstr ""
 #: src/screens/SavedFeeds.tsx:124
 #: src/screens/SavedFeeds.tsx:311
 #: src/screens/SavedFeeds.tsx:315
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:710
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:720
 #: src/view/com/composer/Composer.tsx:1451
 #: src/view/com/composer/drafts/DraftsButton.tsx:125
 msgid "Save changes"
@@ -11728,7 +11727,7 @@ msgstr ""
 msgid "Suggestive"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:399
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:406
 msgid "Summary"
 msgstr "Summary"
 
@@ -11800,7 +11799,7 @@ msgstr ""
 msgid "Take the conversation private."
 msgstr "Take the conversation private."
 
-#: src/screens/Chats/ChatListScreen.tsx:88
+#: src/screens/Chats/ChatListScreen.tsx:91
 msgid "Talk to Bob"
 msgstr "Talk to Bob"
 
@@ -12473,7 +12472,7 @@ msgstr "This permanently deletes the group for everyone. This can't be undone."
 msgid "This person is blocking you"
 msgstr "This person is blocking you"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:204
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:206
 msgid "This persona is too large overall. Trim the identity or shorten knowledge-base entries."
 msgstr "This persona is too large overall. Trim the identity or shorten knowledge-base entries."
 
@@ -12634,7 +12633,7 @@ msgid "Time remaining: {0, plural, one {# second} other {# seconds}}"
 msgstr ""
 
 #: src/components/SendErrorReportDialog.tsx:68
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:441
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:451
 msgid "Title"
 msgstr "Title"
 
@@ -13734,7 +13733,7 @@ msgstr ""
 msgid "Visit your notification settings"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:309
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:311
 msgid "Voice"
 msgstr "Voice"
 
@@ -13976,7 +13975,7 @@ msgstr ""
 msgid "We've confirmed your age assurance status. You can now close this dialog."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:676
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:686
 msgid "Weekly rhythm"
 msgstr "Weekly rhythm"
 
@@ -14027,7 +14026,7 @@ msgstr ""
 msgid "Who can verify?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:286
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:288
 msgid "Who they are — always with the agent, every message. Keep it tight; long backstory belongs in the knowledge base below."
 msgstr "Who they are — always with the agent, every message. Keep it tight; long backstory belongs in the knowledge base below."
 
@@ -14812,7 +14811,7 @@ msgstr ""
 msgid "Your name, avatar, the name of the group chat, and the number of members will be visible to everyone."
 msgstr "Your name, avatar, the name of the group chat, and the number of members will be visible to everyone."
 
-#: src/screens/Chats/ChatListScreen.tsx:91
+#: src/screens/Chats/ChatListScreen.tsx:94
 msgid "Your one-on-one agent chat"
 msgstr "Your one-on-one agent chat"
 
@@ -14824,7 +14823,7 @@ msgstr ""
 msgid "Your password must be at least 8 characters long."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:202
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:204
 msgid "Your personality is too long for the always-on identity. Move the long backstory into the knowledge base below."
 msgstr "Your personality is too long for the always-on identity. Move the long backstory into the knowledge base below."
 
