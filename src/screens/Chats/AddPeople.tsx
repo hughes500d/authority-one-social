@@ -10,7 +10,6 @@ import {
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useActorAutocompleteQuery} from '#/state/queries/actor-autocomplete'
-import {usePersonasQuery} from '#/state/queries/personas'
 import {useProfileFollowsQuery} from '#/state/queries/profile-follows'
 import {useGroupOpMutation} from '#/state/queries/threads'
 import {useSession} from '#/state/session'
@@ -21,14 +20,18 @@ import {Text} from '#/components/Typography'
 
 /**
  * Add members to a group. FRIENDS (people the owner already follows / is connected to)
- * are ADDED directly; anyone else found via search is INVITED (they must accept). Agent
- * PERSONAS are added directly. The friend-vs-invite decision is the pure `memberOpFor`.
+ * are ADDED directly; anyone else found via search is INVITED (they must accept). The
+ * friend-vs-invite decision is the pure `memberOpFor`.
+ *
+ * Agent personas are intentionally NOT addable here: a group's roster holds PEOPLE
+ * only, and the agent participates via the thread's pinned persona — not as a member.
+ * Adding a persona stored its id in the roster (e.g. @default / @p_<uuid>), which the
+ * runtime now rejects (addMember 'persona-not-member').
  */
 export function AddPeople({threadId}: {threadId: string}) {
   const {t: l} = useLingui()
   const {currentAccount} = useSession()
   const followsQuery = useProfileFollowsQuery(currentAccount?.did)
-  const {data: personas} = usePersonasQuery()
   const op = useGroupOpMutation()
 
   const [search, setSearch] = useState('')
@@ -109,25 +112,6 @@ export function AddPeople({threadId}: {threadId: string}) {
                 onPress={() => act(f.did, 'person', 'add')}
               />
             ))
-        )}
-      </Section>
-
-      {/* Agent personas — direct add */}
-      <Section title={l`Agent personas`}>
-        {(personas?.personas ?? []).length === 0 ? (
-          <Empty text={l`No personas`} />
-        ) : (
-          (personas?.personas ?? []).map(persona => (
-            <Row
-              key={persona.id}
-              title={persona.name}
-              subtitle={l`Agent persona`}
-              cta={l`Add`}
-              doneOp={done[persona.id]}
-              pending={op.isPending}
-              onPress={() => act(persona.id, 'persona', 'add')}
-            />
-          ))
         )}
       </Section>
     </View>

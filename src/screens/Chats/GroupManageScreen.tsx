@@ -121,8 +121,11 @@ export function GroupManageScreen({route}: Props) {
             ) : members.length > 0 ? (
               <View style={[a.gap_2xs, a.pt_2xs]}>
                 {members.map(m => {
-                  // The creator can remove person members, but not themselves — and the
-                  // creator row may be identified by did OR handle, so match on both.
+                  // The creator can remove any member but themselves — including stuck
+                  // NON-person rows (legacy persona members: @default / @p_<uuid> added
+                  // before personas were barred from the roster), so they can be cleaned
+                  // up from the UI. The creator row may be identified by did OR handle, so
+                  // match on both.
                   const memberIsCreator = isCreatorIdentity(roster.creatorDid, {
                     did: m.id,
                     handle: m.handle,
@@ -132,7 +135,7 @@ export function GroupManageScreen({route}: Props) {
                       key={`${m.kind}:${m.id}`}
                       member={m}
                       onRemove={
-                        isCreator && m.kind === 'person' && !memberIsCreator
+                        isCreator && !memberIsCreator
                           ? () => onRemove(m)
                           : undefined
                       }
