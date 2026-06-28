@@ -142,8 +142,12 @@ export function streamChat(
           history: req.history ?? [],
           agent: req.agent ?? DEFAULT_AGENT,
           // Attach hosted image URLs only when present, so text-only turns keep
-          // their exact prior wire shape.
-          ...(req.images && req.images.length > 0 ? {images: req.images} : {}),
+          // their exact prior wire shape. The runtime's /app/chat reads
+          // `imageUrls` (+ a single `imageUrl`), matching threadsClient — NOT
+          // `images`, which it silently drops (→ 400 on an image-only turn).
+          ...(req.images && req.images.length > 0
+            ? {imageUrls: req.images, imageUrl: req.images[0]}
+            : {}),
         }),
         signal: controller.signal,
       })
