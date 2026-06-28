@@ -24,12 +24,14 @@ import {
 
 /**
  * Soft character limit for the personality field, with a warning band before it. This is
- * a UI nudge only — the runtime enforces the hard cap and returns a clear error. PROVISIONAL
- * (the owner will confirm the exact number to match the runtime guard); change it in this
- * one spot. Built decoupled (see CharacterCount) so the upcoming identity/knowledge-base
- * split can point a counter at just the compact "identity/soul" field with its own limit.
+ * a UI nudge only — the runtime enforces the real hard cap (~120 KB of TOTAL config) and
+ * returns a clear error. 8000 chars keeps the always-on personality reasonable for token
+ * cost without nagging at normal lengths (a normal personality runs to several thousand
+ * chars); it is well under the runtime cap. PROVISIONAL — change it in this one spot.
+ * Built decoupled (see CharacterCount) so the upcoming identity/knowledge-base split can
+ * point a counter at just the compact "identity/soul" field with its own limit.
  */
-export const PERSONALITY_SOFT_LIMIT = 500
+export const PERSONALITY_SOFT_LIMIT = 8000
 const PERSONALITY_WARN_RATIO = 0.9
 
 /**
