@@ -1629,7 +1629,7 @@ msgstr ""
 msgid "An mockup of a iPhone showing the Bluesky app open to the profile of a verified user with a blue checkmark next to their display name."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:226
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:277
 msgid "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 msgstr "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 
@@ -1959,7 +1959,7 @@ msgstr ""
 msgid "Back to Chats"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:284
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:335
 msgid "Backstory"
 msgstr "Backstory"
 
@@ -2224,7 +2224,7 @@ msgstr ""
 msgid "Breaking site rules"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:253
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:304
 msgid "Bring this persona to life"
 msgstr "Bring this persona to life"
 
@@ -3548,8 +3548,8 @@ msgid "Create or modify an invite link for this group chat"
 msgstr "Create or modify an invite link for this group chat"
 
 #: src/screens/Settings/PersonaSettings/index.tsx:132
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:119
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:425
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:169
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:476
 msgid "Create persona"
 msgstr "Create persona"
 
@@ -4277,7 +4277,7 @@ msgstr "Edit name"
 msgid "Edit People"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:119
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:169
 msgid "Edit persona"
 msgstr "Edit persona"
 
@@ -5101,7 +5101,7 @@ msgstr ""
 msgid "Fetch update"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:223
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:274
 msgid "Fictional life"
 msgstr "Fictional life"
 
@@ -5605,6 +5605,10 @@ msgstr ""
 msgid "Get started"
 msgstr ""
 
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:64
+msgid "Getting long — approaching the limit."
+msgstr "Getting long — approaching the limit."
+
 #: src/components/MediaPreview.tsx:182
 #: src/components/Post/Embed/VideoEmbed/GifPresentationControls.tsx:69
 msgid "GIF"
@@ -5758,7 +5762,7 @@ msgstr "Grant access"
 msgid "Grant location permission"
 msgstr "Grant location permission"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:129
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:139
 msgid "Grant photo permission"
 msgstr "Grant photo permission"
 
@@ -5870,7 +5874,7 @@ msgstr ""
 msgid "Half way there!"
 msgstr ""
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:169
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:179
 msgid "Hand Bob one photo to actually look at. You pick it; it opens in your chat so you can review and send it. This is the only action that shares an image."
 msgstr "Hand Bob one photo to actually look at. You pick it; it opens in your chat so you can review and send it. This is the only action that shares an image."
 
@@ -5930,7 +5934,7 @@ msgstr ""
 msgid "Hate speech"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:320
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:371
 msgid "Haunts"
 msgstr "Haunts"
 
@@ -6144,7 +6148,7 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:303
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:354
 msgid "Home base"
 msgstr "Home base"
 
@@ -6170,7 +6174,7 @@ msgstr ""
 msgid "How should we open this link?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:204
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:255
 msgid "How the agent should sound and behave. Applied server-side to the system prompt."
 msgstr "How the agent should sound and behave. Applied server-side to the system prompt."
 
@@ -7660,7 +7664,7 @@ msgid "My starter pack"
 msgstr "My starter pack"
 
 #: src/components/dialogs/lists/CreateOrEditListDialog.tsx:416
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:126
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:176
 msgid "Name"
 msgstr ""
 
@@ -8018,7 +8022,7 @@ msgstr "No personas"
 msgid "No personas yet"
 msgstr "No personas yet"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:144
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:154
 msgid "No photos found for today yet."
 msgstr "No photos found for today yet."
 
@@ -8103,7 +8107,7 @@ msgstr "No translation received from your device."
 msgid "No video posts yet"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:144
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:194
 msgid "No voices available yet."
 msgstr "No voices available yet."
 
@@ -8217,7 +8221,7 @@ msgstr ""
 #: src/screens/Settings/AccountSettings.tsx:164
 #: src/screens/Settings/ContextEngine/index.tsx:105
 #: src/screens/Settings/ContextEngine/index.tsx:208
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:88
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:90
 #: src/screens/Settings/NotificationSettings/index.tsx:394
 msgid "Off"
 msgstr ""
@@ -8262,7 +8266,7 @@ msgstr "On"
 msgid "On — recognizing places all day in the background"
 msgstr "On — recognizing places all day in the background"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:84
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:86
 msgid "On — summarizing today’s photos (metadata only)"
 msgstr "On — summarizing today’s photos (metadata only)"
 
@@ -8274,7 +8278,7 @@ msgstr "On, but “Always” location permission is needed"
 msgid "On, but location permission is needed"
 msgstr "On, but location permission is needed"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:86
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:88
 msgid "On, but photo permission is needed"
 msgstr "On, but photo permission is needed"
 
@@ -8732,6 +8736,10 @@ msgstr ""
 msgid "Our moderators have reviewed reports and decided to disable your access to chats on Bluesky."
 msgstr ""
 
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:60
+msgid "Over the recommended limit — please shorten it."
+msgstr "Over the recommended limit — please shorten it."
+
 #: src/components/dialogs/StarterPackDialog.tsx:384
 #: src/screens/Chats/GroupManageScreen.tsx:293
 msgid "Owner"
@@ -8854,7 +8862,7 @@ msgstr ""
 msgid "Persona"
 msgstr "Persona"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:191
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:241
 msgid "Personality"
 msgstr "Personality"
 
@@ -8888,7 +8896,7 @@ msgid "Photo context"
 msgstr "Photo context"
 
 #: src/Navigation.tsx:468
-#: src/screens/Settings/PhotoContext/index.tsx:27
+#: src/screens/Settings/PhotoContext/index.tsx:30
 msgid "Photo Context"
 msgstr "Photo Context"
 
@@ -10305,7 +10313,7 @@ msgstr ""
 #: src/screens/SavedFeeds.tsx:124
 #: src/screens/SavedFeeds.tsx:311
 #: src/screens/SavedFeeds.tsx:315
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:423
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:474
 #: src/view/com/composer/Composer.tsx:1451
 #: src/view/com/composer/drafts/DraftsButton.tsx:125
 msgid "Save changes"
@@ -10411,11 +10419,11 @@ msgstr "Scan"
 msgid "Scan QR code"
 msgstr "Scan QR code"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:157
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:167
 msgid "Scan today’s photos"
 msgstr "Scan today’s photos"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:140
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:150
 msgid "Scanning today’s photos…"
 msgstr "Scanning today’s photos…"
 
@@ -10966,11 +10974,11 @@ msgstr ""
 msgid "Share"
 msgstr ""
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:184
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:195
 msgid "Share a photo with Bob"
 msgstr "Share a photo with Bob"
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:166
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:176
 msgid "Share a specific photo"
 msgstr "Share a specific photo"
 
@@ -12730,7 +12738,7 @@ msgid "Try it"
 msgstr "Try it"
 
 #: src/screens/Settings/ContextEngine/index.tsx:142
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:118
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:128
 msgid "Turn off"
 msgstr "Turn off"
 
@@ -12739,7 +12747,7 @@ msgid "Turn off all-day context"
 msgstr "Turn off all-day context"
 
 #: src/screens/Settings/ContextEngine/index.tsx:142
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:118
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:128
 msgid "Turn on"
 msgstr "Turn on"
 
@@ -13681,7 +13689,7 @@ msgstr ""
 msgid "Visit your notification settings"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:140
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:190
 msgid "Voice"
 msgstr "Voice"
 
@@ -13923,7 +13931,7 @@ msgstr ""
 msgid "We've confirmed your age assurance status. You can now close this dialog."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:389
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:440
 msgid "Weekly rhythm"
 msgstr "Weekly rhythm"
 
@@ -13949,7 +13957,7 @@ msgstr ""
 msgid "What's up?"
 msgstr ""
 
-#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:98
+#: src/screens/Settings/ContextEngine/PhotoContextSection.tsx:105
 msgid "When on, this reads only the METADATA of today’s photos on your device — how many, roughly when, and a coarse place from photo location — and turns it into a conclusion like “12 photos, near a venue this afternoon.” Your photos are never read or uploaded. The only time an actual image is shared is when you tap “Share a photo with Bob” below and pick one yourself. We recommend granting LIMITED access (selected photos)."
 msgstr "When on, this reads only the METADATA of today’s photos on your device — how many, roughly when, and a coarse place from photo location — and turns it into a conclusion like “12 photos, near a venue this afternoon.” Your photos are never read or uploaded. The only time an actual image is shared is when you tap “Share a photo with Bob” below and pick one yourself. We recommend granting LIMITED access (selected photos)."
 

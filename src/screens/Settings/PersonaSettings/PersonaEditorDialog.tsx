@@ -23,6 +23,56 @@ import {
 } from './fiction'
 
 /**
+ * Soft character limit for the personality field, with a warning band before it. This is
+ * a UI nudge only — the runtime enforces the hard cap and returns a clear error. PROVISIONAL
+ * (the owner will confirm the exact number to match the runtime guard); change it in this
+ * one spot. Built decoupled (see CharacterCount) so the upcoming identity/knowledge-base
+ * split can point a counter at just the compact "identity/soul" field with its own limit.
+ */
+export const PERSONALITY_SOFT_LIMIT = 500
+const PERSONALITY_WARN_RATIO = 0.9
+
+/**
+ * A live character counter with a soft warning band. Field-agnostic on purpose: pass the
+ * current length + a limit and reuse it wherever (e.g. the future identity field).
+ */
+function CharacterCount({
+  count,
+  limit = PERSONALITY_SOFT_LIMIT,
+}: {
+  count: number
+  limit?: number
+}) {
+  const t = useTheme()
+  const warnAt = Math.round(limit * PERSONALITY_WARN_RATIO)
+  const over = count > limit
+  const near = !over && count >= warnAt
+  const color = over
+    ? t.palette.negative_500
+    : near
+      ? t.palette.negative_400
+      : t.atoms.text_contrast_medium.color
+  return (
+    <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+      <View style={[a.flex_1]}>
+        {over ? (
+          <Text style={[a.text_xs, {color}]}>
+            <Trans>Over the recommended limit — please shorten it.</Trans>
+          </Text>
+        ) : near ? (
+          <Text style={[a.text_xs, {color}]}>
+            <Trans>Getting long — approaching the limit.</Trans>
+          </Text>
+        ) : null}
+      </View>
+      <Text style={[a.text_xs, {color}]}>
+        {count}/{limit}
+      </Text>
+    </View>
+  )
+}
+
+/**
  * Create / edit a persona: name + a voice picked from the runtime's voices list +
  * a free-text personality (applied server-side — the client only sets it).
  */
@@ -200,6 +250,7 @@ function EditorInner({
               style={{minHeight: 96}}
             />
           </TextField.Root>
+          <CharacterCount count={personality.length} />
           <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
             <Trans>
               How the agent should sound and behave. Applied server-side to the
