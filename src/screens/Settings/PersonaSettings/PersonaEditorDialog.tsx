@@ -43,6 +43,10 @@ const IDENTITY_PERSONALITY_LIMIT = 2000 // runtime hard-caps identity.personalit
 const KB_SUMMARY_LIMIT = 600
 const KB_ENTRY_BODY_LIMIT = 8000
 const WARN_RATIO = 0.9
+// The runtime caps + dedupes reference images at 8; mirror it so extras aren't silently
+// dropped server-side. The runtime keys self-likeness off a reference NAMED "avatar".
+const REF_IMAGE_MAX = 8
+const PRIMARY_REF_NAME = 'avatar'
 
 /**
  * A live character counter with a soft warning band. Field-agnostic: pass the current
@@ -116,6 +120,19 @@ interface RefImageDraft {
 
 function toRefDraft(r: ReferenceImage): RefImageDraft {
   return {key: r.id ?? newDraftKey(), id: r.id, name: r.name, url: r.url}
+}
+
+/**
+ * Drafts for the editor, with the "avatar"-named reference moved to the front so the
+ * primary (index 0) IS the likeness reference the runtime keys on.
+ */
+function loadRefDrafts(refs: ReferenceImage[]): RefImageDraft[] {
+  const drafts = refs.map(toRefDraft)
+  const idx = drafts.findIndex(
+    r => r.name.trim().toLowerCase() === PRIMARY_REF_NAME,
+  )
+  if (idx > 0) drafts.unshift(drafts.splice(idx, 1)[0])
+  return drafts
 }
 
 /**
@@ -196,7 +213,7 @@ function EditorInner({
         setPersonality(d.identity.personality ?? '')
         setKbSummary(d.knowledgeBase.summary ?? '')
         setEntries(d.knowledgeBase.entries.map(toDraft))
-        setRefImages(d.referenceImages.map(toRefDraft))
+        setRefImages(loadRefDrafts(d.referenceImages))
         setFiction(fictionDraftFrom(d.fiction))
         const vi = voices.findIndex(v => v.voiceId === d.voiceId)
         if (vi >= 0) setVoiceIndex(vi)
@@ -252,6 +269,12 @@ function EditorInner({
   // Pick a photo, upload it via the raw-bytes media path (same as chat photos), and add
   // it as a NAMED reference. The first one defaults to "avatar" (the primary image).
   const addReferenceImage = async () => {
+    if (refImages.length >= REF_IMAGE_MAX) {
+      Toast.show(l`You can add up to ${REF_IMAGE_MAX} reference images.`, {
+        type: 'warning',
+      })
+      return
+    }
     let picked
     try {
       picked = await openPicker({selectionLimit: 1})
@@ -298,12 +321,15 @@ function EditorInner({
         }))
         .filter(e => e.title.length > 0 || e.body.length > 0),
     }
-    // Only fully-uploaded references (have a url); a blank name defaults so none is empty.
+    // Only fully-uploaded references (have a url), capped at the runtime's max. The PRIMARY
+    // (index 0) is ALWAYS named "avatar" — the runtime keys self-likeness off that name, so
+    // the primary is forced to it (the UI also locks its name). Others use their typed name.
     const referenceImages = refImages
       .filter(r => !!r.url)
+      .slice(0, REF_IMAGE_MAX)
       .map((r, i) => ({
         ...(r.id ? {id: r.id} : {}),
-        name: r.name.trim() || (i === 0 ? 'avatar' : 'reference'),
+        name: i === 0 ? PRIMARY_REF_NAME : r.name.trim() || 'reference',
         url: r.url,
       }))
     if (isEdit && persona) {
@@ -592,14 +618,19 @@ function EditorInner({
               t.atoms.border_contrast_low,
             ]}>
             <View style={[a.gap_2xs]}>
-              <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
-                <Trans>Reference images</Trans>
-              </Text>
+              <View style={[a.flex_row, a.align_center, a.justify_between]}>
+                <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
+                  <Trans>Reference images</Trans>
+                </Text>
+                <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+                  {refImages.length}/{REF_IMAGE_MAX}
+                </Text>
+              </View>
               <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
                 <Trans>
                   Named photos the agent can reference when it generates images
-                  — your avatar, car, pet, home… The first one is the primary
-                  profile image.
+                  — car, pet, home… The first is the primary “avatar”, used as
+                  the agent’s own likeness. Up to {REF_IMAGE_MAX}.
                 </Trans>
               </Text>
             </View>
@@ -643,24 +674,32 @@ function EditorInner({
                       )}
                     </View>
                     <View style={[a.flex_1, a.gap_2xs]}>
-                      <TextField.Root>
-                        <TextField.Input
-                          label="Reference image name"
-                          placeholder={
-                            i === 0 ? l`avatar` : l`e.g. car, pet, home`
-                          }
-                          defaultValue={r.name}
-                          onChangeText={text =>
-                            updateRefImage(r.key, {name: text})
-                          }
-                          autoCapitalize="none"
-                        />
-                      </TextField.Root>
                       {i === 0 ? (
-                        <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
-                          <Trans>Primary profile image</Trans>
-                        </Text>
-                      ) : null}
+                        // PRIMARY: name is locked to "avatar" (the runtime's self-likeness
+                        // key) so the user can't rename it away.
+                        <>
+                          <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
+                            {PRIMARY_REF_NAME}
+                          </Text>
+                          <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+                            <Trans>
+                              Primary — used as the agent’s likeness.
+                            </Trans>
+                          </Text>
+                        </>
+                      ) : (
+                        <TextField.Root>
+                          <TextField.Input
+                            label="Reference image name"
+                            placeholder={l`e.g. car, pet, home`}
+                            defaultValue={r.name}
+                            onChangeText={text =>
+                              updateRefImage(r.key, {name: text})
+                            }
+                            autoCapitalize="none"
+                          />
+                        </TextField.Root>
+                      )}
                     </View>
                     <Button
                       label={`${l`Remove`} ${r.name || 'reference image'}`}
@@ -677,19 +716,27 @@ function EditorInner({
               </View>
             )}
 
-            <Button
-              label="Add reference image"
-              size="small"
-              variant="solid"
-              color="secondary"
-              onPress={() => {
-                void addReferenceImage()
-              }}>
-              <ButtonIcon icon={PlusIcon} />
-              <ButtonText>
-                <Trans>Add reference image</Trans>
-              </ButtonText>
-            </Button>
+            {refImages.length < REF_IMAGE_MAX ? (
+              <Button
+                label="Add reference image"
+                size="small"
+                variant="solid"
+                color="secondary"
+                onPress={() => {
+                  void addReferenceImage()
+                }}>
+                <ButtonIcon icon={PlusIcon} />
+                <ButtonText>
+                  <Trans>Add reference image</Trans>
+                </ButtonText>
+              </Button>
+            ) : (
+              <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+                <Trans>
+                  Maximum of {REF_IMAGE_MAX} reference images reached.
+                </Trans>
+              </Text>
+            )}
           </View>
 
           {/* ── FICTIONAL LIFE — authored on an existing persona ── */}

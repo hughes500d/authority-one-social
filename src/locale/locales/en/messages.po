@@ -1144,7 +1144,7 @@ msgstr "Add automation label to account"
 msgid "Add emoji reaction"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:580
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:606
 msgid "Add entry"
 msgstr "Add entry"
 
@@ -1214,7 +1214,7 @@ msgstr ""
 msgid "Add recommended feeds"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:683
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:730
 msgid "Add reference image"
 msgstr "Add reference image"
 
@@ -1631,7 +1631,7 @@ msgstr ""
 msgid "An mockup of a iPhone showing the Bluesky app open to the profile of a verified user with a blue checkmark next to their display name."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:702
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:754
 msgid "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 msgstr "An optional authored backstory and routine. The agent draws on it when “bring to life” is on."
 
@@ -1926,10 +1926,6 @@ msgstr ""
 msgid "Available"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:644
-msgid "avatar"
-msgstr "avatar"
-
 #: src/components/dms/AddMembersFlow.tsx:359
 #: src/components/dms/AddMembersFlow.tsx:527
 #: src/components/dms/AddMembersFlow.tsx:533
@@ -1965,7 +1961,7 @@ msgstr ""
 msgid "Back to Chats"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:758
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:810
 msgid "Backstory"
 msgstr "Backstory"
 
@@ -2230,7 +2226,7 @@ msgstr ""
 msgid "Breaking site rules"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:728
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:780
 msgid "Bring this persona to life"
 msgstr "Bring this persona to life"
 
@@ -3386,7 +3382,7 @@ msgstr "Could not load profile"
 msgid "Could not mute chat"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:259
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:282
 msgid "Could not open the photo picker."
 msgstr "Could not open the photo picker."
 
@@ -3432,7 +3428,7 @@ msgstr ""
 msgid "Could not upload contacts. You need to re-verify your phone number to proceed"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:280
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:303
 msgid "Could not upload the image. Please try again."
 msgstr "Could not upload the image. Please try again."
 
@@ -3562,8 +3558,8 @@ msgid "Create or modify an invite link for this group chat"
 msgstr "Create or modify an invite link for this group chat"
 
 #: src/screens/Settings/PersonaSettings/index.tsx:132
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:340
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:896
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:366
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:948
 msgid "Create persona"
 msgstr "Create persona"
 
@@ -3675,7 +3671,7 @@ msgstr "Decline"
 msgid "Decline this language suggestion"
 msgstr "Decline this language suggestion"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:468
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:494
 msgid "Deep lore the agent pulls in only when relevant. The summary is always included; entries are retrieved as needed — so this can be long without bloating every message."
 msgstr "Deep lore the agent pulls in only when relevant. The summary is always included; entries are retrieved as needed — so this can be long without bloating every message."
 
@@ -3841,7 +3837,7 @@ msgstr ""
 msgid "Detach quote post?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:555
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:581
 msgid "Details the agent can reference"
 msgstr "Details the agent can reference"
 
@@ -4191,7 +4187,7 @@ msgstr ""
 msgid "E.g. artistic nudes."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:644
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:694
 msgid "e.g. car, pet, home"
 msgstr "e.g. car, pet, home"
 
@@ -4303,7 +4299,7 @@ msgstr "Edit name"
 msgid "Edit People"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:340
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:366
 msgid "Edit persona"
 msgstr "Edit persona"
 
@@ -4546,7 +4542,7 @@ msgstr ""
 msgid "Entertainment"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:499
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:525
 msgid "Entries"
 msgstr "Entries"
 
@@ -5131,7 +5127,7 @@ msgstr ""
 msgid "Fetch update"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:699
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:751
 msgid "Fictional life"
 msgstr "Fictional life"
 
@@ -5635,7 +5631,7 @@ msgstr ""
 msgid "Get started"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:70
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:74
 msgid "Getting long — approaching the limit."
 msgstr "Getting long — approaching the limit."
 
@@ -5964,7 +5960,7 @@ msgstr ""
 msgid "Hate speech"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:792
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:844
 msgid "Haunts"
 msgstr "Haunts"
 
@@ -6178,7 +6174,7 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:776
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:828
 msgid "Home base"
 msgstr "Home base"
 
@@ -6204,7 +6200,7 @@ msgstr ""
 msgid "How should we open this link?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:448
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:474
 msgid "How the agent should sound and behave. This is the always-on soul — keep it short."
 msgstr "How the agent should sound and behave. This is the always-on soul — keep it short."
 
@@ -6239,7 +6235,7 @@ msgstr ""
 msgid "I'm on Bluesky as {0} - come find me! https://bsky.app/download"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:357
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:383
 msgid "Identity"
 msgstr "Identity"
 
@@ -6699,7 +6695,7 @@ msgstr ""
 msgid "Keep me posted"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:544
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:570
 msgid "Keywords (comma-separated)"
 msgstr "Keywords (comma-separated)"
 
@@ -6708,7 +6704,7 @@ msgstr "Keywords (comma-separated)"
 msgid "Kick member"
 msgstr "Kick member"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:465
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:491
 msgid "Knowledge base"
 msgstr "Knowledge base"
 
@@ -7325,6 +7321,10 @@ msgstr ""
 msgid "Marked all as read"
 msgstr ""
 
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:735
+msgid "Maximum of {REF_IMAGE_MAX} reference images reached."
+msgstr "Maximum of {REF_IMAGE_MAX} reference images reached."
+
 #: src/components/dialogs/EmailDialog/screens/VerificationReminder.tsx:85
 #: src/components/dialogs/EmailDialog/screens/VerificationReminder.tsx:92
 msgid "Maybe later"
@@ -7710,7 +7710,7 @@ msgid "My starter pack"
 msgstr "My starter pack"
 
 #: src/components/dialogs/lists/CreateOrEditListDialog.tsx:416
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:369
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:395
 msgid "Name"
 msgstr ""
 
@@ -7718,9 +7718,9 @@ msgstr ""
 msgid "Name where you are now (Home, School, Sports Practice). One is recognized by proximity and labeled in your context — coordinates stay on this device."
 msgstr "Name where you are now (Home, School, Sports Practice). One is recognized by proximity and labeled in your context — coordinates stay on this device."
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:594
-msgid "Named photos the agent can reference when it generates images — your avatar, car, pet, home… The first one is the primary profile image."
-msgstr "Named photos the agent can reference when it generates images — your avatar, car, pet, home… The first one is the primary profile image."
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:630
+msgid "Named photos the agent can reference when it generates images — car, pet, home… The first is the primary “avatar”, used as the agent’s own likeness. Up to {REF_IMAGE_MAX}."
+msgstr "Named photos the agent can reference when it generates images — car, pet, home… The first is the primary “avatar”, used as the agent’s own likeness. Up to {REF_IMAGE_MAX}."
 
 #: src/lib/interests.ts:66
 msgid "Nature"
@@ -7965,7 +7965,7 @@ msgstr ""
 msgid "No drafts yet"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:503
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:529
 msgid "No entries yet. Add detailed lore the agent can reference."
 msgstr "No entries yet. Add detailed lore the agent can reference."
 
@@ -8093,7 +8093,7 @@ msgstr ""
 msgid "No recent GIFs yet. Pick one to see it here."
 msgstr "No recent GIFs yet. Pick one to see it here."
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:604
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:640
 msgid "No reference images yet."
 msgstr "No reference images yet."
 
@@ -8160,7 +8160,7 @@ msgstr "No translation received from your device."
 msgid "No video posts yet"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:387
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:413
 msgid "No voices available yet."
 msgstr "No voices available yet."
 
@@ -8789,7 +8789,7 @@ msgstr ""
 msgid "Our moderators have reviewed reports and decided to disable your access to chats on Bluesky."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:66
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:70
 msgid "Over the recommended limit — please shorten it."
 msgstr "Over the recommended limit — please shorten it."
 
@@ -8915,7 +8915,7 @@ msgstr ""
 msgid "Persona"
 msgstr "Persona"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:431
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:457
 msgid "Personality"
 msgstr "Personality"
 
@@ -9377,14 +9377,14 @@ msgstr ""
 msgid "Previous image"
 msgstr ""
 
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:685
+msgid "Primary — used as the agent’s likeness."
+msgstr "Primary — used as the agent’s likeness."
+
 #: src/screens/Settings/LanguageSettings.tsx:141
 #: src/screens/Settings/LanguageSettings.tsx:157
 msgid "Primary language"
 msgstr ""
-
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:654
-msgid "Primary profile image"
-msgstr "Primary profile image"
 
 #: src/view/shell/desktop/RightNav.tsx:126
 #: src/view/shell/desktop/RightNav.tsx:127
@@ -9675,7 +9675,7 @@ msgstr ""
 msgid "Reconnect"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:591
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:623
 msgid "Reference images"
 msgstr "Reference images"
 
@@ -9720,7 +9720,7 @@ msgstr ""
 #: src/screens/Messages/ConversationSettings/Member.tsx:162
 #: src/screens/Messages/ConversationSettings/prompts.tsx:170
 #: src/screens/Moderation/index.tsx:477
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:659
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:705
 #: src/screens/Settings/Settings.tsx:689
 #: src/view/com/modals/UserAddRemoveLists.tsx:236
 #: src/view/com/posts/PostFeedErrorMessage.tsx:221
@@ -9782,7 +9782,7 @@ msgstr "Remove caption file"
 msgid "Remove embed"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:532
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:558
 msgid "Remove entry"
 msgstr "Remove entry"
 
@@ -10379,7 +10379,7 @@ msgstr ""
 #: src/screens/SavedFeeds.tsx:124
 #: src/screens/SavedFeeds.tsx:311
 #: src/screens/SavedFeeds.tsx:315
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:894
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:946
 #: src/view/com/composer/Composer.tsx:1451
 #: src/view/com/composer/drafts/DraftsButton.tsx:125
 msgid "Save changes"
@@ -11758,7 +11758,7 @@ msgstr ""
 msgid "Suggestive"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:478
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:504
 msgid "Summary"
 msgstr "Summary"
 
@@ -12503,7 +12503,7 @@ msgstr "This permanently deletes the group for everyone. This can't be undone."
 msgid "This person is blocking you"
 msgstr "This person is blocking you"
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:229
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:246
 msgid "This persona is too large overall. Trim the identity or shorten knowledge-base entries."
 msgstr "This persona is too large overall. Trim the identity or shorten knowledge-base entries."
 
@@ -12664,7 +12664,7 @@ msgid "Time remaining: {0, plural, one {# second} other {# seconds}}"
 msgstr ""
 
 #: src/components/SendErrorReportDialog.tsx:68
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:523
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:549
 msgid "Title"
 msgstr "Title"
 
@@ -13764,7 +13764,7 @@ msgstr ""
 msgid "Visit your notification settings"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:383
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:409
 msgid "Voice"
 msgstr "Voice"
 
@@ -14006,7 +14006,7 @@ msgstr ""
 msgid "We've confirmed your age assurance status. You can now close this dialog."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:860
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:912
 msgid "Weekly rhythm"
 msgstr "Weekly rhythm"
 
@@ -14057,7 +14057,7 @@ msgstr ""
 msgid "Who can verify?"
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:360
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:386
 msgid "Who they are — always with the agent, every message. Keep it tight; long backstory belongs in the knowledge base below."
 msgstr "Who they are — always with the agent, every message. Keep it tight; long backstory belongs in the knowledge base below."
 
@@ -14266,6 +14266,10 @@ msgstr ""
 #: src/screens/Settings/components/ChangeHandleDialog.tsx:210
 msgid "You are verified. You will lose your verification status if you change your handle. <0>Learn more.</0>"
 msgstr ""
+
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:273
+msgid "You can add up to {REF_IMAGE_MAX} reference images."
+msgstr "You can add up to {REF_IMAGE_MAX} reference images."
 
 #: src/screens/Search/modules/ExploreInterestsCard.tsx:46
 msgid "You can adjust your interests at any time from \"Content and media\" settings."
@@ -14858,7 +14862,7 @@ msgstr ""
 msgid "Your password must be at least 8 characters long."
 msgstr ""
 
-#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:227
+#: src/screens/Settings/PersonaSettings/PersonaEditorDialog.tsx:244
 msgid "Your personality is too long for the always-on identity. Move the long backstory into the knowledge base below."
 msgstr "Your personality is too long for the always-on identity. Move the long backstory into the knowledge base below."
 
