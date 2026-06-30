@@ -31,7 +31,6 @@ import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession} from '#/state/session'
 import {useSetDrawerOpen} from '#/state/shell'
-import {useSupabaseSession} from '#/state/supabase'
 import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
@@ -54,7 +53,6 @@ import {
   HomeOpen_Filled_Corner0_Rounded as HomeFilled,
   HomeOpen_Stoke2_Corner0_Rounded as Home,
 } from '#/components/icons/HomeOpen'
-import {Key_Stroke2_Corner2_Rounded as Key} from '#/components/icons/Key'
 import {
   MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilled,
   MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlass,
@@ -303,11 +301,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen])
 
-  const onPressAuthorityAccount = useCallback(() => {
-    navigation.navigate('AuthorityAccount')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen])
-
   const onPressBookmarks = useCallback(() => {
     ax.metric('nav:click', {item: 'saved', surface: 'drawer'})
     navigation.navigate('Bookmarks')
@@ -398,18 +391,15 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
               isActive={isAtMyProfile}
               onPress={onPressProfile}
             />
-            <AuthorityAccountMenuItem onPress={onPressAuthorityAccount} />
             <SettingsMenuItem onPress={onPressSettings} />
           </>
         ) : (
           <>
-            {/* The agent + its account work off the Supabase session, which is
-                independent of the atproto/PDS login — so expose both even when
-                there's no social session. */}
+            {/* The agent rides the atproto/PDS session, so expose it alongside the
+                core items even before a full social session is loaded. */}
             <AgentChatMenuItem onPress={onPressAgentChat} />
             <ChatsMenuItem onPress={onPressChats} />
             <ForYouMenuItem onPress={onPressForYou} />
-            <AuthorityAccountMenuItem onPress={onPressAuthorityAccount} />
             <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
             <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
@@ -691,30 +681,6 @@ let ForYouMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   )
 }
 ForYouMenuItem = memo(ForYouMenuItem)
-
-let AuthorityAccountMenuItem = ({
-  onPress,
-}: {
-  onPress: () => void
-}): React.ReactNode => {
-  const t = useTheme()
-  // Reflect signed-in state in the label so the drawer communicates it directly.
-  const {status} = useSupabaseSession()
-  // Custom (non-Bluesky) item: plain literals so labels never depend on the
-  // compiled Lingui catalog (which would otherwise render as a raw message ID).
-  return (
-    <MenuItem
-      icon={<Key style={[t.atoms.text]} width={iconWidth} />}
-      label={
-        status === 'signedIn'
-          ? 'Authority One account'
-          : 'Sign in to Authority One'
-      }
-      onPress={onPress}
-    />
-  )
-}
-AuthorityAccountMenuItem = memo(AuthorityAccountMenuItem)
 
 let BookmarksMenuItem = ({
   isActive,

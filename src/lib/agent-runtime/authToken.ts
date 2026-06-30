@@ -1,36 +1,47 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Supabase session token provider.
+// Agent-runtime bearer provider.
 //
-// The agent runtime authenticates /app/chat with the user's **Supabase session**
-// bearer token (NOT the atproto/PDS session). The contract here is intentionally
-// tiny — a function returning the current access token (or null when signed out) —
-// so the rest of the network layer never imports the Supabase client directly.
+// SINGLE-LOGIN (2026-06-30): the agent runtime ('/app/*') now authenticates with
+// the user's **atproto/PDS session** — the same login that signs them into the
+// social app — NOT a separate Supabase token. The runtime validates the access
+// token against the PDS (com.atproto.server.getSession → DID) and authorizes the
+// agent by the verified DID, so this provider just returns the current atproto
+// access token from the persisted session.
 //
-// WIRED: `#/state/supabase` installs the real provider at startup via
-// `setSupabaseTokenProvider(getFreshAccessToken)` (a module side-effect that runs
-// when its Provider is mounted in App.{web,native}.tsx). That provider returns the
-// live session's access token, refreshing it when at/near expiry, or null when
-// signed out. The default below is only the pre-mount / test fallback.
+// Backward-compat: `setSupabaseTokenProvider` is retained as a NO-OP so the legacy
+// Supabase auth module still imports + calls cleanly during the transition; it can
+// no longer override the atproto token.
 // ─────────────────────────────────────────────────────────────────────────────
+import * as persisted from '#/state/persisted'
 
 export type TokenProvider = () => Promise<string | null>
 
-let provider: TokenProvider = () => {
-  // Pre-mount / test fallback: until `#/state/supabase` installs the real
-  // provider, return a hand-issued dev token if one is set, else null (the
-  // runtime rejects un-authenticated requests with 401).
-  return Promise.resolve(process.env.EXPO_PUBLIC_DEV_SUPABASE_TOKEN ?? null)
+/**
+ * The current atproto/PDS access token (the bearer the agent runtime '/app/*'
+ * authenticates with), or null when signed out. Read from the persisted session so
+ * the network layer needs no React context.
+ */
+export function getAgentRuntimeAccessToken(): Promise<string | null> {
+  try {
+    const session = persisted.get('session')
+    return Promise.resolve(session?.currentAccount?.accessJwt ?? null)
+  } catch {
+    return Promise.resolve(null)
+  }
 }
 
 /**
- * Override the token provider. Called by the Supabase auth integration in
- * `#/state/supabase`: `setSupabaseTokenProvider(getFreshAccessToken)`.
+ * @deprecated SINGLE-LOGIN migration: the agent channel authenticates with the
+ * atproto/PDS session now, not a separate Supabase token. Retained as a NO-OP so
+ * the legacy Supabase module's `setSupabaseTokenProvider(...)` calls don't break
+ * and can no longer override the atproto token.
  */
-export function setSupabaseTokenProvider(next: TokenProvider): void {
-  provider = next
+export function setSupabaseTokenProvider(_next: TokenProvider): void {
+  // intentional no-op — atproto is the single front door now
 }
 
-/** Resolve the current Supabase access token, or null if not signed in. */
-export async function getSupabaseAccessToken(): Promise<string | null> {
-  return provider()
-}
+/**
+ * @deprecated alias kept so existing '/app/*' clients compile unchanged. Now
+ * returns the atproto access token (see getAgentRuntimeAccessToken).
+ */
+export const getSupabaseAccessToken = getAgentRuntimeAccessToken

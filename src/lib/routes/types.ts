@@ -18,8 +18,6 @@ export type CommonNavigatorParams = {
     threadId?: string
     threadTitle?: string
   }
-  // Authority One: Supabase account layer (sign in / up) that authorizes the agent channel.
-  AuthorityAccount: undefined
   // Authority One: "For You" / Discover — TikTok-style vertical feed of localized sports content.
   ForYou: undefined
   // Authority One: multi-chat (threads + groups).

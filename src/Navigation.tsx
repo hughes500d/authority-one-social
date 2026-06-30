@@ -74,7 +74,6 @@ import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
 import {AgentChatScreen} from '#/screens/AgentChat'
-import {AuthorityAccountScreen} from '#/screens/AuthorityAccount'
 import {BookmarksScreen} from '#/screens/Bookmarks'
 import {ChatListScreen} from '#/screens/Chats/ChatListScreen'
 import {GroupManageScreen} from '#/screens/Chats/GroupManageScreen'
@@ -195,11 +194,6 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="GroupManage"
         getComponent={() => GroupManageScreen}
         options={{title: title(msg`Manage group`), requireAuth: true}}
-      />
-      <Stack.Screen
-        name="AuthorityAccount"
-        getComponent={() => AuthorityAccountScreen}
-        options={{title: title(msg`Authority One account`)}}
       />
       <Stack.Screen
         name="ForYou"

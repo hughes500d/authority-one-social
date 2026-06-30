@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native'
 import {Image} from 'expo-image'
-import {useNavigation} from '@react-navigation/native'
 
 import {
   DEFAULT_AGENT,
@@ -22,12 +21,11 @@ import {openPicker} from '#/lib/media/picker'
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
-  type NavigationProp,
 } from '#/lib/routes/types'
 import {usePersonasQuery} from '#/state/queries/personas'
-import {useSupabaseSession} from '#/state/supabase'
+import {useSession} from '#/state/session'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {Button, ButtonIcon} from '#/components/Button'
 import {Image_Stroke2_Corner0_Rounded as ImageIcon} from '#/components/icons/Image'
 import {Microphone_Stroke2_Corner0_Rounded as MicIcon} from '#/components/icons/Microphone'
 import {PaperPlaneVertical_Filled_Stroke2_Corner1_Rounded as SendIcon} from '#/components/icons/PaperPlane'
@@ -53,11 +51,10 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'AgentChat'>
 export function AgentChatScreen({route}: Props) {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
-  const navigation = useNavigation<NavigationProp>()
-  // Authority One account session (Supabase). The agent channel needs a bearer
-  // from this session; when signed out we surface a tappable prompt instead of a
-  // dead composer.
-  const {status: accountStatus} = useSupabaseSession()
+  // SINGLE-LOGIN: the agent channel authenticates with the user's atproto/PDS
+  // session (their DID) — the same login that's required to be in the app — so we
+  // gate on that session, not a separate Authority One (Supabase) account.
+  const {hasSession} = useSession()
   // Lift the composer above the native bottom tab bar (and mobile-web bottom
   // bar). Returns 0 on desktop web, so the web centered layout is unaffected.
   const bottomBarOffset = useBottomBarOffset(8)
@@ -239,12 +236,11 @@ export function AgentChatScreen({route}: Props) {
           ? `${agentName} is speaking…`
           : null
 
-  // Signed out of the Authority One account → no bearer can be attached, so the
-  // chat can't run. Show a tappable sign-in prompt that routes to the account
-  // screen. After signing in, `accountStatus` flips to 'signedIn' and this
-  // screen re-renders into the chat (the account screen also offers a "Talk to
-  // your agent" button as a direct return path).
-  if (accountStatus === 'signedOut') {
+  // SINGLE-LOGIN: the agent channel rides the atproto/PDS session, so being in the
+  // app already authorizes the agent — there is no second "Authority One account"
+  // to sign into. This guard is effectively unreachable (the app requires a
+  // session), but keep a quiet fallback instead of a dead composer just in case.
+  if (!hasSession) {
     return (
       <Layout.Screen>
         <Layout.Header.Outer>
@@ -265,18 +261,9 @@ export function AgentChatScreen({route}: Props) {
           ]}>
           <Text
             style={[a.text_md, t.atoms.text_contrast_medium, a.text_center]}>
-            {/* Custom (non-Bluesky) copy: plain literal so it never depends on
-                the compiled Lingui catalog (which would render a raw msg ID). */}
-            Sign in to your Authority One account to chat with {agentName}.
+            {/* Plain literal so it never depends on the compiled Lingui catalog. */}
+            Sign in to chat with {agentName}.
           </Text>
-          <Button
-            label="Sign in to chat"
-            size="large"
-            variant="solid"
-            color="primary"
-            onPress={() => navigation.navigate('AuthorityAccount')}>
-            <ButtonText>Sign in to chat</ButtonText>
-          </Button>
         </View>
       </Layout.Screen>
     )

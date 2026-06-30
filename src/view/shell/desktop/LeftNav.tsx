@@ -22,7 +22,6 @@ import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfilesQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
-import {useSupabaseSession} from '#/state/supabase'
 import {useCloseAllActiveElements} from '#/state/util'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
@@ -64,7 +63,6 @@ import {
   HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
   HomeOpen_Stoke2_Corner0_Rounded as HomeIcon,
 } from '#/components/icons/HomeOpen'
-import {Key_Stroke2_Corner2_Rounded as KeyIcon} from '#/components/icons/Key'
 import {
   MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
   MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
@@ -616,9 +614,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
   const {hasSession, currentAccount} = useSession()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
-  // Authority One account works off the Supabase session, independent of the
-  // atproto/PDS login, so reflect that state directly in the nav label.
-  const {status: supabaseStatus} = useSupabaseSession()
 
   const aa = useAgeAssurance()
   // splitview uses the minimal variant of the leftnav. unfortunately there's no easy
@@ -705,19 +700,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: HashtagIcon,
               active: HashtagFilledIcon,
-            }}
-          />
-          <NavItem
-            label={
-              supabaseStatus === 'signedIn'
-                ? 'Authority One account'
-                : 'Sign in to Authority One'
-            }
-            href="/account"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: KeyIcon,
-              active: KeyIcon,
             }}
           />
           <View style={[a.py_sm]}>

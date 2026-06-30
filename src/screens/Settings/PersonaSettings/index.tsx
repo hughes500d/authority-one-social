@@ -276,9 +276,8 @@ function UnavailableNotice() {
       </Text>
       <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
         <Trans>
-          Sign in to your Authority One account and make sure the agent runtime
-          is reachable. Your agent keeps working with its default name and voice
-          in the meantime.
+          Make sure you're signed in and the agent runtime is reachable. Your
+          agent keeps working with its default name and voice in the meantime.
         </Trans>
       </Text>
     </View>

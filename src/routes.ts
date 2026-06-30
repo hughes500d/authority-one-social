@@ -15,7 +15,6 @@ export const router = new Router<AllNavigatableRoutes>({
   LegacyNotificationSettings: '/notifications/settings',
   Settings: '/settings',
   AgentChat: '/agent',
-  AuthorityAccount: '/account',
   ForYou: '/for-you',
   Lists: '/lists',
   // moderation
