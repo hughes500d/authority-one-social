@@ -27,6 +27,7 @@ import * as Layout from '#/components/Layout'
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {AddAgents} from './AddAgents'
 import {AddPeople} from './AddPeople'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'GroupManage'>
@@ -201,6 +202,20 @@ export function GroupManageScreen({route}: Props) {
             </View>
           ) : null}
 
+          {/* Add an agent — choose one of your agents to join the chat. */}
+          <View
+            style={[
+              a.gap_md,
+              a.pt_lg,
+              a.border_t,
+              t.atoms.border_contrast_low,
+            ]}>
+            <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
+              <Trans>Add an agent</Trans>
+            </Text>
+            <AddAgents threadId={threadId} />
+          </View>
+
           {/* Add people. */}
           <View
             style={[
@@ -299,6 +314,7 @@ function MemberRow({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const isAgent = member.isAgent || member.kind === 'agent'
   const isPerson = member.kind === 'person'
   // Friendly label, NEVER a raw did:plc string. "You" for the current account; otherwise
   // the display name / handle; and a generic fallback for a bare-DID member the runtime
@@ -313,7 +329,15 @@ function MemberRow({
     : member.name
       ? sanitizeDisplayName(member.name)
       : (handleLabel ?? idLabel ?? l`Member`)
-  const subtitle = isPerson ? handleLabel : l`Agent persona`
+  // Agent participants show their handle + an "Agent" tag; people show their handle; a
+  // legacy persona row (barred now, but old data may exist) still reads "Agent persona".
+  const subtitle = isAgent
+    ? handleLabel
+      ? `${handleLabel} · ${l`Agent`}`
+      : l`Agent`
+    : isPerson
+      ? handleLabel
+      : l`Agent persona`
   const roleLabel =
     member.role === 'owner'
       ? l`Owner`

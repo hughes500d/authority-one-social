@@ -57,14 +57,16 @@ export interface ThreadWriteResult<T = undefined> {
 
 /** A member of a group thread, as surfaced by GET /app/threads/:id/members. */
 export interface ThreadMember {
-  /** DID for a person, or persona id for an agent persona. */
+  /** DID/handle for a person, or the agent's handle for an agent participant. */
   id: string
   kind: GroupMemberKind
   /** Display name when known (handle/id used as the fallback at the UI layer). */
   name?: string
-  /** Handle for a person member (e.g. alice.pds.authority-one.com). */
+  /** Handle for a person or agent member (e.g. alice.pds.authority-one.com). */
   handle?: string
-  role?: 'owner' | 'admin' | 'member' | 'pending'
+  role?: 'owner' | 'admin' | 'member' | 'pending' | 'agent'
+  /** True when this member is a first-class AGENT identity chosen to participate. */
+  isAgent?: boolean
 }
 
 /**
@@ -77,7 +79,7 @@ export interface ThreadRoster {
   members: ThreadMember[]
 }
 
-export type GroupMemberKind = 'person' | 'persona'
+export type GroupMemberKind = 'person' | 'persona' | 'agent'
 export type GroupOp =
   | 'invite'
   | 'add'
@@ -177,7 +179,13 @@ export function normalizeMember(raw: unknown): ThreadMember | null {
   // otherwise a handle-only member has no id and gets dropped (empty roster).
   const id = str(r.id) ?? str(r.did) ?? str(r.memberId) ?? str(r.handle)
   if (!id) return null
-  const kind: GroupMemberKind = r.kind === 'persona' ? 'persona' : 'person'
+  // An AGENT member (a chosen agent identity) is flagged by kind:'agent' OR isAgent:true.
+  const isAgent = r.kind === 'agent' || r.isAgent === true
+  const kind: GroupMemberKind = isAgent
+    ? 'agent'
+    : r.kind === 'persona'
+      ? 'persona'
+      : 'person'
   const role = r.role
   return {
     id,
@@ -188,9 +196,11 @@ export function normalizeMember(raw: unknown): ThreadMember | null {
       role === 'owner' ||
       role === 'admin' ||
       role === 'member' ||
-      role === 'pending'
+      role === 'pending' ||
+      role === 'agent'
         ? role
         : undefined,
+    ...(isAgent ? {isAgent: true} : {}),
   }
 }
 
@@ -240,15 +250,16 @@ export function isCreatorIdentity(
 
 /**
  * Friend-vs-invite decision: an already-connected person (in the owner's follows /
- * social graph) is ADDED directly; anyone else is INVITED and must accept. Personas are
- * always added directly (no consent step). PURE + tested.
+ * social graph) is ADDED directly; anyone else is INVITED and must accept. Personas and
+ * AGENTS are always added directly (no consent step — an agent the owner chose, or a
+ * pinned persona, doesn't accept an invite). PURE + tested.
  */
 export function memberOpFor(
   memberKind: GroupMemberKind,
   memberId: string,
   friendIds: ReadonlySet<string> | readonly string[],
 ): GroupOp {
-  if (memberKind === 'persona') return 'add'
+  if (memberKind === 'persona' || memberKind === 'agent') return 'add'
   const set = friendIds instanceof Set ? friendIds : new Set<string>(friendIds)
   return set.has(memberId) ? 'add' : 'invite'
 }
@@ -348,6 +359,10 @@ export async function createThread(input: {
 }): Promise<ThreadWriteResult<Thread>> {
   const headers = await authHeaders().catch(() => null)
   if (!headers) return {ok: false, signedOut: true}
+  // A GROUP never pins a persona on create — no personaId is sent, so no agent/persona
+  // is auto-added (fixes "Stormy added to new groups by default"). A group's agent joins
+  // ONLY via the deliberate "add agent" picker. Agent (1:1) threads may still pin one.
+  const personaId = input.kind === 'group' ? undefined : input.personaId
   try {
     const res = await fetch(THREADS_ENDPOINT, {
       method: 'POST',
@@ -355,7 +370,7 @@ export async function createThread(input: {
       body: JSON.stringify({
         title: input.title,
         kind: input.kind,
-        personaId: input.personaId,
+        personaId,
         roleSet: input.roleSet,
       }),
     })
@@ -378,7 +393,7 @@ export async function createThread(input: {
         data: {
           id,
           kind: input.kind,
-          personaId: input.personaId,
+          personaId,
           title:
             input.title ?? (input.kind === 'group' ? 'Group' : 'Talk to Bob'),
           unreadCount: 0,

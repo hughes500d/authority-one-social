@@ -32,6 +32,14 @@ export const threadDeleteUrl = (id: string) =>
   `${THREADS_ENDPOINT}/${encodeURIComponent(id)}/delete`
 
 /**
+ * Owner's selectable AGENTS endpoint (owner-scoped). GET /app/agents returns the agent
+ * identities this owner may CHOOSE to add to a group chat — resolved server-side from the
+ * owner's DID via the owner→agents-set index. `{agents:[{handle, displayName, avatar}]}`.
+ * Read-only; degrades to an empty list when unreachable / not deployed.
+ */
+export const AGENTS_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/agents`
+
+/**
  * Chat image upload endpoint (owner-scoped). The app POSTs the RAW image bytes with an
  * image `Content-Type` header; the runtime hosts them in R2 (the same `putRawImage` path
  * the inbound SMS/MMS media uses) and returns the public URL, which the app then sends

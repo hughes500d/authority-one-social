@@ -14,6 +14,7 @@ import {Button, ButtonText} from '#/components/Button'
 import * as TextField from '#/components/forms/TextField'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {AddAgents} from './AddAgents'
 import {AddPeople} from './AddPeople'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewGroup'>
@@ -35,6 +36,10 @@ export function NewGroupScreen({}: Props) {
     const title = name.trim()
     if (!title || create.isPending) return
     setError(null)
+    // A new group starts with ONLY its human creator: we send NO personaId, so no
+    // persona is pinned and no agent is auto-added (fixes "Stormy added by default").
+    // An agent joins ONLY when the owner deliberately picks one below via <AddAgents>,
+    // the same add path used on the manage screen.
     create.mutate(
       {kind: 'group', title},
       {
@@ -118,14 +123,28 @@ export function NewGroupScreen({}: Props) {
             </>
           ) : (
             <>
+              {/* Choose an agent to join the chat. */}
+              <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
+                <Trans>Add an agent to “{name.trim()}”</Trans>
+              </Text>
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                <Trans>
+                  Pick one of your agents to join the chat. It becomes a visible
+                  participant and can reply in the group.
+                </Trans>
+              </Text>
+              <AddAgents threadId={threadId} />
+
+              <View
+                style={[a.pt_md, a.border_t, t.atoms.border_contrast_low]}
+              />
               <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
                 <Trans>Add people to “{name.trim()}”</Trans>
               </Text>
               <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
                 <Trans>
                   Friends you’re connected with are added right away. Anyone
-                  else gets an invite to accept. You can also add agent
-                  personas.
+                  else gets an invite to accept.
                 </Trans>
               </Text>
               <AddPeople threadId={threadId} />

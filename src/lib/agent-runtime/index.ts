@@ -1,3 +1,9 @@
+export {
+  fetchOwnerAgents,
+  normalizeOwnerAgents,
+  type OwnerAgent,
+  type OwnerAgentsResult,
+} from './agentsClient'
 export {postApprovalDecision} from './approvals'
 export {
   getSupabaseAccessToken,

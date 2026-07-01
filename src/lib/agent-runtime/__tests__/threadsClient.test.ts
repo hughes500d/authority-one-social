@@ -77,6 +77,12 @@ describe('memberOpFor (friend vs invite)', () => {
     expect(memberOpFor('persona', 'p1', friends)).toBe('add')
     expect(memberOpFor('persona', 'p1', [])).toBe('add')
   })
+  it('agents are always added directly (a chosen agent does not accept an invite)', () => {
+    expect(memberOpFor('agent', 'ada.pds.authority-one.com', friends)).toBe(
+      'add',
+    )
+    expect(memberOpFor('agent', 'ada.pds.authority-one.com', [])).toBe('add')
+  })
   it('a connected friend is added; a stranger is invited', () => {
     expect(memberOpFor('person', 'did:friend', friends)).toBe('add')
     expect(memberOpFor('person', 'did:stranger', friends)).toBe('invite')
@@ -143,6 +149,36 @@ describe('createThread', () => {
     expect(res.data?.id).toBe('g9')
   })
 
+  it('a GROUP create never sends personaId (no persona pinned / no agent auto-added)', async () => {
+    mockToken.mockResolvedValue('tok')
+    global.fetch = okJson({id: 'g12', kind: 'group', title: 'Fam'})
+    // Even if a caller passes a personaId, a group must not pin it.
+    await createThread({
+      kind: 'group',
+      title: 'Fam',
+      personaId: 'p_stormy',
+    } as never)
+    const call = (global.fetch as unknown as jest.Mock).mock.calls[0]
+    const body = JSON.parse(String((call[1] as {body: string}).body)) as {
+      kind?: string
+      personaId?: string
+    }
+    expect(body.kind).toBe('group')
+    expect(body.personaId).toBeUndefined()
+  })
+
+  it('an AGENT (1:1) thread may still pin a personaId', async () => {
+    mockToken.mockResolvedValue('tok')
+    global.fetch = okJson({id: 'a1', kind: 'agent', title: 'Chat'})
+    await createThread({kind: 'agent', title: 'Chat', personaId: 'p_x'})
+    const call = (global.fetch as unknown as jest.Mock).mock.calls[0]
+    const body = JSON.parse(String((call[1] as {body: string}).body)) as {
+      kind?: string
+      personaId?: string
+    }
+    expect(body.personaId).toBe('p_x')
+  })
+
   it('recovers the id when the runtime nests the created thread', async () => {
     mockToken.mockResolvedValue('tok')
     global.fetch = okJson({ok: true, thread: {id: 'g10'}})
@@ -196,6 +232,25 @@ describe('normalizeMembers (pure)', () => {
     })
     expect(out.map(m => m.id)).toEqual(['o', 'a', 'm', 'p'])
     expect(out.find(m => m.id === 'a')?.kind).toBe('persona')
+  })
+
+  it('surfaces an agent member with kind:agent + isAgent (from kind or the isAgent flag)', () => {
+    const out = normalizeMembers({
+      members: [
+        {handle: 'ada.pds.authority-one.com', kind: 'agent', role: 'agent'},
+        {handle: 'brian.pds', isAgent: true, role: 'agent'},
+        {did: 'did:plc:human', role: 'member'},
+      ],
+    })
+    const ada = out.find(m => m.handle === 'ada.pds.authority-one.com')
+    expect(ada?.kind).toBe('agent')
+    expect(ada?.isAgent).toBe(true)
+    const brian = out.find(m => m.handle === 'brian.pds')
+    expect(brian?.kind).toBe('agent')
+    expect(brian?.isAgent).toBe(true)
+    const human = out.find(m => m.id === 'did:plc:human')
+    expect(human?.kind).toBe('person')
+    expect(human?.isAgent).toBeUndefined()
   })
 
   it('returns [] when members is missing or not an array', () => {
