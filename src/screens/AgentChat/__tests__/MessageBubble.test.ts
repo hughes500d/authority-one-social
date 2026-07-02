@@ -38,4 +38,13 @@ describe('MessageBubble renders media + channel badges (no compiled-catalog depe
     expect(SRC).not.toMatch(/@lingui\/(react|core)\/macro/)
     expect(SRC).not.toMatch(/<Trans[\s>]/)
   })
+
+  it('renders no bubble for a settled, empty, action-less, media-less turn (silent no-op)', () => {
+    // A deliberately silent agent turn must not draw a blank rounded rectangle.
+    expect(SRC).toMatch(/const hasActions =/)
+    expect(SRC).toMatch(
+      /!message\.pending && !hasText && media\.length === 0 && !hasActions/,
+    )
+    expect(SRC).toMatch(/return null/)
+  })
 })

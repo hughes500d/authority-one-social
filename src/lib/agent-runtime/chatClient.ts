@@ -58,11 +58,23 @@ function toApprovalAction(p: PendingAction): ApprovalAction {
 
 /** Normalize a `done`/JSON body into a ChatTurnResult with safe defaults. */
 function toTurnResult(data: any): ChatTurnResult {
+  // A deliberate no-op turn: the runtime tags it `status:'silent'` or a bare
+  // `silent:true`. It carries no reply text; the UI must render no bubble.
+  const silent = data?.status === 'silent' || data?.silent === true
+  // The runtime sends the reply under `message` (authoritative) and now also `text`;
+  // prefer `message`, fall back to `text`, so a reply is never dropped as blank.
+  const message =
+    typeof data?.message === 'string' && data.message
+      ? data.message
+      : typeof data?.text === 'string'
+        ? data.text
+        : ''
   return {
-    message: typeof data?.message === 'string' ? data.message : '',
-    status: data?.status ?? 'answered',
+    message,
+    status: silent ? 'silent' : (data?.status ?? 'answered'),
     pending: Array.isArray(data?.pending) ? data.pending : [],
     mediaUrls: Array.isArray(data?.mediaUrls) ? data.mediaUrls : [],
+    ...(silent ? {silent: true} : {}),
   }
 }
 

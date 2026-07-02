@@ -303,15 +303,26 @@ function toThreadMessage(raw: unknown): ChatMessage | null {
   // the field name). Absent today — the UI falls back to the thread's agent name.
   const senderName =
     str(r.senderName) ?? str(r.author) ?? str(r.from) ?? str(r.name)
+  // The runtime carries reply text under `text`, and now also `message`; read `text`
+  // first, fall back to `message`, so a persisted reply never hydrates blank.
+  const text = str(r.text) ?? str(r.message) ?? ''
+  const mediaUrls = Array.isArray(r.mediaUrls)
+    ? r.mediaUrls.filter((u): u is string => typeof u === 'string' && !!u)
+    : []
+  // Drop a silent/empty assistant row so a deliberate no-op turn (or a stale blank one)
+  // never hydrates as an empty bubble. A user row always has content, so this only
+  // affects assistant turns.
+  const silent = r.status === 'silent' || r.silent === true
+  if (role === 'assistant' && (silent || (!text && mediaUrls.length === 0))) {
+    return null
+  }
   return {
     id: msgId(role),
     role,
-    text: typeof r.text === 'string' ? r.text : '',
+    text,
     channel: typeof r.channel === 'string' ? r.channel : 'app',
     ...(senderName ? {senderName} : {}),
-    mediaUrls: Array.isArray(r.mediaUrls)
-      ? r.mediaUrls.filter((u): u is string => typeof u === 'string' && !!u)
-      : [],
+    mediaUrls,
     createdAt: Number.isFinite(at) ? at : Date.now(),
   }
 }
@@ -465,14 +476,26 @@ export async function sendToThread(
     // field name). Absent today — the UI falls back to the thread's agent name.
     const senderName =
       str(data?.senderName) ?? str(data?.author) ?? str(data?.from)
+    // A deliberate no-op: the runtime marks a turn it chose not to answer (e.g. an
+    // agent in a group that wasn't addressed) with `status:'silent'` or `silent:true`.
+    // A silent turn carries no text and must NOT draw a bubble.
+    const silent = data?.status === 'silent' || data?.silent === true
+    // The runtime sends the reply under both `text` and `message`; read `text` first,
+    // fall back to `message`, so a real reply never renders blank.
+    const message = str(data?.text) ?? str(data?.message) ?? ''
     const reply: ChatTurnResult = {
-      message: typeof data?.message === 'string' ? data.message : '',
-      status: 'answered',
+      message,
+      status: silent
+        ? 'silent'
+        : typeof data?.status === 'string'
+          ? (data.status as ChatTurnResult['status'])
+          : 'answered',
       pending: Array.isArray(data?.pending) ? (data.pending as never[]) : [],
       mediaUrls: Array.isArray(data?.mediaUrls)
         ? (data.mediaUrls as string[]).filter(u => typeof u === 'string')
         : [],
       ...(senderName ? {senderName} : {}),
+      ...(silent ? {silent: true} : {}),
     }
     return {ok: true, signedOut: false, data: reply}
   } catch (e) {

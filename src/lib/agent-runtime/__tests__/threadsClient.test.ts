@@ -5,6 +5,7 @@ import {
   createThread,
   deleteThread,
   fetchThreadMembers,
+  fetchThreadMessages,
   fetchThreads,
   groupOp,
   groupOpBody,
@@ -419,6 +420,51 @@ describe('sendToThread', () => {
     expect(body.imageUrl).toBe('https://r2/in.png') // tolerate both shapes
     expect(res.data?.message).toBe('hi back')
     expect(res.data?.mediaUrls).toEqual(['https://r2/x.png'])
+  })
+
+  it('reads reply text from `text` first, falling back to `message`', async () => {
+    mockToken.mockResolvedValue('tok')
+    // Runtime now sends the reply under both fields; `text` wins.
+    global.fetch = okJson({text: 'from text', message: 'from message'})
+    const res = await sendToThread('t1', {message: 'hi'})
+    expect(res.data?.message).toBe('from text')
+
+    global.fetch = okJson({message: 'only message'})
+    const res2 = await sendToThread('t1', {message: 'hi'})
+    expect(res2.data?.message).toBe('only message')
+  })
+
+  it('marks a silent turn (status:silent / silent:true) with silent + empty text', async () => {
+    mockToken.mockResolvedValue('tok')
+    global.fetch = okJson({status: 'silent'})
+    const res = await sendToThread('t1', {message: 'hi'})
+    expect(res.ok).toBe(true)
+    expect(res.data?.silent).toBe(true)
+    expect(res.data?.status).toBe('silent')
+    expect(res.data?.message).toBe('')
+
+    global.fetch = okJson({silent: true, message: ''})
+    const res2 = await sendToThread('t1', {message: 'hi'})
+    expect(res2.data?.silent).toBe(true)
+  })
+})
+
+describe('fetchThreadMessages (silent / blank suppression)', () => {
+  it('drops silent and empty assistant rows, keeps real replies', async () => {
+    mockToken.mockResolvedValue('tok')
+    global.fetch = okJson({
+      messages: [
+        {role: 'user', text: 'hello'},
+        {role: 'agent', status: 'silent', text: ''}, // deliberate no-op
+        {role: 'agent', silent: true}, // bare silent flag
+        {role: 'agent', text: ''}, // stray blank (no text/media)
+        {role: 'agent', text: 'real reply'},
+        {role: 'agent', message: 'from message field'}, // text carried under `message`
+      ],
+    })
+    const msgs = await fetchThreadMessages('t1')
+    const texts = msgs.map(m => m.text)
+    expect(texts).toEqual(['hello', 'real reply', 'from message field'])
   })
 })
 

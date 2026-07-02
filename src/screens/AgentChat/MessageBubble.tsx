@@ -33,8 +33,17 @@ export function MessageBubble({
   const isUser = message.role === 'user'
   const hasText = message.text.length > 0
   const media = message.mediaUrls ?? []
+  const hasActions = (message.actions?.length ?? 0) > 0
   const showLoader = message.pending && !hasText && media.length === 0
   const badge = channelBadge(message.channel)
+
+  // Nothing to show: a settled turn with no text, media, or actions — e.g. a
+  // deliberately SILENT agent turn. Render no bubble at all (an empty bubble would
+  // otherwise draw as a blank rounded rectangle). Defense-in-depth: the state layer
+  // also drops silent turns, so this is a belt-and-braces guard for any stray empty.
+  if (!message.pending && !hasText && media.length === 0 && !hasActions) {
+    return null
+  }
 
   return (
     <View style={[a.w_full, isUser ? a.align_end : a.align_start]}>

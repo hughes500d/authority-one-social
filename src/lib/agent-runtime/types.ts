@@ -41,6 +41,9 @@ export type ChatTurnStatus =
   | 'not-done'
   | 'paused'
   | 'error'
+  /** A deliberate no-op turn: the agent chose not to speak (e.g. it wasn't
+   *  addressed in a group). Renders NO bubble — see `silent` on ChatTurnResult. */
+  | 'silent'
 
 export interface ChatMessage {
   id: string
@@ -140,6 +143,12 @@ export interface ChatTurnResult {
   /** Display name of the responding agent/persona (group threads). Optional — the
    *  runtime does not send this yet; see the group-attribution handover note. */
   senderName?: string
+  /**
+   * True when the runtime deliberately produced no reply (`status:'silent'` or a bare
+   * `silent:true`) — e.g. an agent in a group that wasn't addressed. The UI renders NO
+   * bubble for a silent turn (an empty bubble would otherwise be drawn).
+   */
+  silent?: boolean
 }
 
 /** The `chunk` SSE payload: one incremental slice of the reply. */

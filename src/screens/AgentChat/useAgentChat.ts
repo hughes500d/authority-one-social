@@ -160,6 +160,22 @@ export function useAgentChat(
             // text and the approval decoration appends to it). Fall back to the
             // accumulated chunks if a stream ended without a `done` frame.
             const finalText = result?.message || acc
+            // A SILENT turn is a deliberate no-op (e.g. a group agent that wasn't
+            // addressed). Drop the empty assistant placeholder entirely rather than
+            // leaving a blank bubble — but only when there's genuinely nothing to show
+            // (no text, media, or approval actions arrived for it).
+            const isSilent =
+              result?.silent === true || result?.status === 'silent'
+            if (isSilent && !finalText && !(result?.mediaUrls?.length ?? 0)) {
+              setMessages(prev => {
+                const held = prev.find(m => m.id === assistantId)
+                if (held?.actions?.length) return prev // keep: it carries an action card
+                return prev.filter(m => m.id !== assistantId)
+              })
+              setIsStreaming(false)
+              abortRef.current = null
+              return
+            }
             if (finalText) acc = finalText
             upsertAssistant(assistantId, m => ({
               ...m,
