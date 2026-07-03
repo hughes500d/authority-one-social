@@ -123,9 +123,15 @@ export function NewGroupScreen({}: Props) {
             </>
           ) : (
             <>
-              {/* Choose an agent to join the chat. */}
+              {/* Choose an agent to join the chat. The group name is composed OUTSIDE
+                  <Trans> (as plain JSX) so it always renders: this string is not yet in
+                  the compiled i18n catalog, and a missing entry with a numbered ICU
+                  placeholder ({0}) renders the placeholder literally instead of the value
+                  (stripMessageField:false keeps the source, but does not interpolate the
+                  numbered arg for a missing message). Plain, placeholder-free Trans text
+                  falls back to source correctly. */}
               <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
-                <Trans>Add an agent to “{name.trim()}”</Trans>
+                <Trans>Add an agent to</Trans> “{name.trim()}”
               </Text>
               <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
                 <Trans>
