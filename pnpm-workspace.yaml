@@ -18,6 +18,9 @@ allowBuilds:
   'core-js-pure': true
   'esbuild': true
   'unrs-resolver': true
+  # wrangler-action installs wrangler at deploy time (deploy-web.yml);
+  # workerd is wrangler's native runtime binary and needs its postinstall.
+  'workerd': true
 patchedDependencies:
   '@discord/bottom-sheet@4.6.1': patches/@discord__bottom-sheet@4.6.1.patch
   '@sentry/react-native@6.20.0': patches/@sentry__react-native@6.20.0.patch
