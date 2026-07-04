@@ -87,6 +87,15 @@ export const PERSONAS_ACTIVE_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/personas/
 export const VOICES_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/voices`
 
 /**
+ * Social-autonomy config endpoint (owner-scoped, agent-scoped like the persona
+ * routes). GET ?agent= returns the agent's resolved config.autoSocial + today's
+ * spend; POST {agent?, ...patch} applies a targeted per-section merge and echoes
+ * the resolved config. Everything the config produces is APPROVE-EACH in the
+ * runtime — this endpoint only shapes what gets drafted.
+ */
+export const SOCIAL_AUTONOMY_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/social-autonomy`
+
+/**
  * "For You" engagement endpoints (owner-scoped). `signals` ingests batched
  * per-item engagement events; `profile` returns the learned interest weights used
  * to rank the feed. See the M2 contract in the runtime.

@@ -1,11 +1,13 @@
 import {useState} from 'react'
 import {ActivityIndicator, View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
+import {useNavigation} from '@react-navigation/native'
 
 import {type Persona} from '#/lib/agent-runtime'
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
+  type NavigationProp,
 } from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useOwnerAgentsQuery} from '#/state/queries/agents'
@@ -22,6 +24,7 @@ import * as Dialog from '#/components/Dialog'
 import {Check_Stroke2_Corner0_Rounded as CheckIcon} from '#/components/icons/Check'
 import {PencilLine_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
+import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
 import * as Prompt from '#/components/Prompt'
@@ -44,6 +47,7 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'PersonaSettings'>
 export function PersonaSettingsScreen({route}: Props) {
   const {t: l} = useLingui()
   const agent = route.params?.agent
+  const navigation = useNavigation<NavigationProp>()
   const {data, isLoading, error} = usePersonasQuery(agent)
   const ownerAgents = useOwnerAgentsQuery()
   const setActive = useSetActivePersonaMutation(agent)
@@ -102,6 +106,26 @@ export function PersonaSettingsScreen({route}: Props) {
               displayName={agentRow?.displayName}
               number={agentRow?.number}
             />
+          ) : null}
+          {!notYourAgent ? (
+            <>
+              <SettingsList.PressableItem
+                label={l`Social autonomy`}
+                accessibilityHint={l`Opens this agent's social autonomy settings`}
+                onPress={() =>
+                  navigation.navigate(
+                    'SocialAutonomySettings',
+                    agent ? {agent} : undefined,
+                  )
+                }>
+                <SettingsList.ItemIcon icon={SparkleIcon} />
+                <SettingsList.ItemText>
+                  <Trans>Social autonomy</Trans>
+                </SettingsList.ItemText>
+                <SettingsList.Chevron />
+              </SettingsList.PressableItem>
+              <SettingsList.Divider />
+            </>
           ) : null}
           {isLoading ? (
             <View style={[a.py_2xl, a.align_center]}>

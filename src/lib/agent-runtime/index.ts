@@ -83,6 +83,26 @@ export {
 } from './poiClient'
 export {fetchSceneTags, type SceneImage} from './sceneClient'
 export {
+  applyAutoSocialPatch,
+  type AutoSocialComment,
+  type AutoSocialConfig,
+  type AutoSocialPatch,
+  type AutoSocialPoll,
+  type AutoSocialPosting,
+  type AutoSocialSpend,
+  type AutoSocialWelcome,
+  fetchSocialAutonomy,
+  type FriendRule,
+  normalizeAutoSocial,
+  normalizeFriendOverrides,
+  normalizeSocialAutonomyResponse,
+  normalizeSpend,
+  type SocialAutonomyResult,
+  type SocialAutonomyState,
+  type SocialAutonomyWriteResult,
+  updateSocialAutonomy,
+} from './socialAutonomyClient'
+export {
   createThread,
   deleteThread,
   fetchThreadMembers,

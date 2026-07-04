@@ -55,6 +55,10 @@ export const router = new Router<AllNavigatableRoutes>({
   // Plain path FIRST: matchName picks the first pattern for URL building, and the
   // agent-scoped form then rides in as a query param (which matchPath reads back).
   PersonaSettings: ['/settings/persona', '/settings/persona/:agent'],
+  SocialAutonomySettings: [
+    '/settings/social-autonomy',
+    '/settings/social-autonomy/:agent',
+  ],
   MyAgents: '/settings/agents',
   ChatList: '/chats',
   NewGroup: '/chats/new-group',

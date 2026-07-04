@@ -129,6 +129,7 @@ import {PersonaSettingsScreen} from '#/screens/Settings/PersonaSettings'
 import {PhotoContextSettingsScreen} from '#/screens/Settings/PhotoContext'
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
+import {SocialAutonomySettingsScreen} from '#/screens/Settings/SocialAutonomySettings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
 import {
   StarterPackScreen,
@@ -443,6 +444,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => PersonaSettingsScreen}
         options={{
           title: title(msg`Persona`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="SocialAutonomySettings"
+        getComponent={() => SocialAutonomySettingsScreen}
+        options={{
+          title: title(msg`Social autonomy`),
           requireAuth: true,
         }}
       />
