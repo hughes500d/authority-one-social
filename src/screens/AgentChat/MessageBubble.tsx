@@ -1,14 +1,16 @@
-import {View} from 'react-native'
+import {Pressable, View} from 'react-native'
 import {Image} from 'expo-image'
 
 import {type ApprovalAction, type ChatMessage} from '#/lib/agent-runtime'
 import {atoms as a, useTheme} from '#/alf'
 import {Microphone_Stroke2_Corner0_Rounded as MicIcon} from '#/components/icons/Microphone'
+import {useLightboxControls} from '#/components/Lightbox/state'
 import {Loader} from '#/components/Loader'
 import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
 import {ApprovalCard} from './ApprovalCard'
 import {channelBadge} from './channelBadge'
+import {CHAT_IMAGE_ALT, lightboxImagesForMedia} from './chatImageLightbox'
 
 /**
  * A single chat bubble. User messages align right (primary), assistant left (contrast).
@@ -30,6 +32,7 @@ export function MessageBubble({
   onDecision: (action: ApprovalAction, decision: 'approve' | 'reject') => void
 }) {
   const t = useTheme()
+  const {openLightbox} = useLightboxControls()
   const isUser = message.role === 'user'
   const hasText = message.text.length > 0
   const media = message.mediaUrls ?? []
@@ -124,18 +127,29 @@ export function MessageBubble({
             ) : null}
 
             {/* Inline media — public R2 URLs the turn generated (or carried). Rendered
-                as rounded thumbnails under the text, in the same bubble. */}
+                as rounded thumbnails under the text, in the same bubble. Tapping opens
+                the app's lightbox, which carries the Save/Download and Share actions
+                (native: header Save button; web: image-options menu). */}
             {media.map((url, i) => (
-              <Image
+              <Pressable
                 key={`${url}_${i}`}
-                source={{uri: url}}
-                style={[a.rounded_sm, a.mt_xs, {width: 220, height: 220}]}
-                contentFit="cover"
-                accessibilityIgnoresInvertColors
-                // Plain literal alt text (not Lingui) so it never depends on the
-                // compiled catalog.
-                alt="Image from your agent"
-              />
+                accessibilityRole="imagebutton"
+                accessibilityLabel={CHAT_IMAGE_ALT}
+                accessibilityHint="Opens the image full screen, where it can be saved or shared"
+                onPress={() =>
+                  openLightbox({
+                    images: lightboxImagesForMedia(media),
+                    index: i,
+                  })
+                }>
+                <Image
+                  source={{uri: url}}
+                  style={[a.rounded_sm, a.mt_xs, {width: 220, height: 220}]}
+                  contentFit="cover"
+                  accessibilityIgnoresInvertColors
+                  alt={CHAT_IMAGE_ALT}
+                />
+              </Pressable>
             ))}
           </>
         )}

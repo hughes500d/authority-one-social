@@ -5,6 +5,7 @@ import {
   convertCdnPreset,
   getDataUriSize,
   getResizedDimensions,
+  imageDownloadFilename,
 } from './util'
 
 export async function compressIfNeeded(
@@ -54,9 +55,27 @@ export async function shareImageModal(_opts: {uri: string}) {
  */
 export async function saveImageToMediaLibrary({uri}: {uri: string}) {
   const downloadUri = convertCdnPreset(uri, 'download')
-  const segments = downloadUri.split('/')
-  const filename = `bluesky-${segments.at(-1)}.jpg`
-  downloadUrl(downloadUri, filename)
+  if (downloadUri !== uri) {
+    // Bluesky CDN image: the `download` preset serves Content-Disposition:
+    // attachment, so a plain anchor click downloads it directly.
+    const segments = downloadUri.split('/')
+    const filename = `bluesky-${segments.at(-1)}.jpg`
+    downloadUrl(downloadUri, filename)
+    return
+  }
+  // Any other image (agent-chat media on R2, data URIs, ...): browsers ignore
+  // the anchor `download` attribute for cross-origin URLs and would navigate
+  // to the image instead, so fetch the bytes and download from a same-origin
+  // object URL. Requires CORS on the image host.
+  const res = await fetch(uri)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch image: HTTP ${res.status}`)
+  }
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  downloadUrl(objectUrl, imageDownloadFilename(uri, blob.type))
+  // Firefox requires a small delay
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 100)
 }
 
 export async function getImageDim(path: string): Promise<Dimensions> {
