@@ -116,9 +116,13 @@ export interface UseAgentChat {
  */
 export function useAgentChat(
   agent?: string,
-  opts?: {threadId?: string},
+  opts?: {threadId?: string; selfSenderId?: string},
 ): UseAgentChat {
   const threadId = opts?.threadId
+  // The CURRENT signed-in account's identity (DID). Stamped onto locally-created
+  // user turns so group attribution can match strictly on sender identity — a
+  // message is "You" only when ITS sender is the viewer, never inferred from role.
+  const selfSenderId = opts?.selfSenderId
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [isHydrating, setIsHydrating] = useState(true)
@@ -141,18 +145,33 @@ export function useAgentChat(
   // re-entry re-hydrates, which is exactly the desired "repopulate on return".
   useEffect(() => {
     let cancelled = false
-    void (async () => {
-      const loaded = threadId
-        ? await fetchThreadMessages(threadId)
-        : (await fetchHistory()).messages
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
+    const load = async (): Promise<{messages: ChatMessage[]; ok: boolean}> => {
+      if (threadId) {
+        return fetchThreadMessages(threadId)
+      }
+      const res = await fetchHistory()
+      return {messages: res.messages, ok: !res.error && !res.signedOut}
+    }
+    const hydrate = async (attempt: number) => {
+      const loaded = await load()
       if (cancelled) return
-      if (loaded.length > 0) {
-        setMessages(prev => (prev.length === 0 ? loaded : prev))
+      if (loaded.messages.length > 0) {
+        setMessages(prev => (prev.length === 0 ? loaded.messages : prev))
+      }
+      // A FAILED read (auth race / transient network) is not "no history": retry
+      // once shortly instead of settling on a false empty-chat screen. A genuinely
+      // empty thread (ok:true) settles immediately.
+      if (!loaded.ok && attempt === 0) {
+        retryTimer = setTimeout(() => void hydrate(1), 1500)
+        return
       }
       setIsHydrating(false)
-    })()
+    }
+    void hydrate(0)
     return () => {
       cancelled = true
+      if (retryTimer) clearTimeout(retryTimer)
     }
     // Re-hydrate if the thread changes; the empty-list guard makes a re-run safe.
   }, [threadId])
@@ -188,8 +207,9 @@ export function useAgentChat(
       try {
         const loaded = await fetchThreadMessages(threadId)
         if (cancelled || isStreamingRef.current) return
-        if (loaded.length > 0) {
-          setMessages(prev => mergeServerMessages(prev, loaded))
+        // Merge only a SUCCESSFUL read; a failed poll must not touch local state.
+        if (loaded.ok && loaded.messages.length > 0) {
+          setMessages(prev => mergeServerMessages(prev, loaded.messages))
         }
       } finally {
         inFlight = false
@@ -274,9 +294,10 @@ export function useAgentChat(
               pending: false,
               status: result?.status ?? m.status,
               mediaUrls: result?.mediaUrls ?? m.mediaUrls,
-              // Group attribution: the responding persona's name when the runtime sends
-              // it (else the screen falls back to the thread's agent name).
+              // Group attribution: the responding persona's name/identity when the
+              // runtime sends them (else the screen falls back to the agent name).
               senderName: result?.senderName ?? m.senderName,
+              senderId: result?.senderId ?? m.senderId,
             }))
             if (finalText) opts?.onReplyChunk?.(finalText)
             setIsStreaming(false)
@@ -330,6 +351,7 @@ export function useAgentChat(
         role: 'user',
         text: trimmed,
         createdAt: Date.now(),
+        ...(selfSenderId ? {senderId: selfSenderId} : {}),
         ...(images.length > 0 ? {mediaUrls: images} : {}),
       }
       const assistantId = newId('a')
@@ -349,7 +371,7 @@ export function useAgentChat(
       setMessages(prev => [...prev, userMsg, assistantMsg])
       runTurn(trimmed, history, assistantId, opts)
     },
-    [isStreaming, runTurn],
+    [isStreaming, runTurn, selfSenderId],
   )
 
   // Re-run the last transport-failed turn. The user's message bubble is already on

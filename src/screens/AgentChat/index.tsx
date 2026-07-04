@@ -40,6 +40,7 @@ import {Loader} from '#/components/Loader'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {canSend, type ChatAttachment, imagesForSend} from './attachment'
+import {groupSenderLabel} from './attribution'
 import {
   COMPOSER_KEYBOARD_VERTICAL_OFFSET,
   composerBottomOffset,
@@ -53,6 +54,19 @@ import {useVoiceConversation} from './useVoiceConversation'
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AgentChat'>
 
 export function AgentChatScreen({route}: Props) {
+  // Navigating between chats reuses this mounted screen with new params (the route
+  // name is the same), which used to leak one thread's messages into another and
+  // block re-hydration (the hydrate-on-mount guard only seeds an EMPTY list). Keying
+  // the inner screen by thread makes every chat switch a clean mount.
+  return (
+    <AgentChatScreenInner
+      key={route.params?.threadId ?? 'default'}
+      route={route}
+    />
+  )
+}
+
+function AgentChatScreenInner({route}: {route: Props['route']}) {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
   // SINGLE-LOGIN: the agent channel authenticates with the user's atproto/PDS
@@ -103,16 +117,31 @@ export function AgentChatScreen({route}: Props) {
         : null
     : null
 
-  // The CURRENT USER's identity strings, lowercased, so a hydrated group row stamped
-  // with the user's own senderId is labeled "You" — never whatever junk display
-  // name/handle the runtime may have stored for the owner (see fix: "@ok.").
+  // The CURRENT USER's identity strings, lowercased, so a group row is labeled
+  // "You" ONLY when its stamped senderId IS the viewer (DID or handle) — never
+  // inferred from role or a stored display name (see fix: "@ok."). Another
+  // member's message must show THEIR name from every viewer's perspective.
   const selfIds = new Set(
     [currentAccount?.did, currentAccount?.handle]
       .filter(Boolean)
       .map(s => s!.toLowerCase()),
   )
-  const isSelfMessage = (m: ChatMessage) =>
-    !!m.senderId && selfIds.has(m.senderId.toLowerCase())
+
+  // Resolve a sender's display name from the group roster when the row carries an
+  // identity but no name (e.g. rows stamped with only a DID/handle).
+  const rosterNameFor = (senderId?: string): string | undefined => {
+    if (!senderId) return undefined
+    const sid = senderId.toLowerCase()
+    const member = participants.find(
+      p =>
+        p.id.toLowerCase() === sid ||
+        (p.handle && p.handle.toLowerCase() === sid),
+    )
+    return member?.name ?? member?.handle
+  }
+
+  const groupSenderName = (m: ChatMessage): string | undefined =>
+    groupSenderLabel(m, {selfIds, rosterName: rosterNameFor, agentName})
 
   // Constrain the conversation to a readable, centered column on web/wide
   // screens; on narrow windows / native it falls back to full width.
@@ -133,7 +162,7 @@ export function AgentChatScreen({route}: Props) {
     decide,
     transportError,
     retry,
-  } = useAgentChat(agent, {threadId})
+  } = useAgentChat(agent, {threadId, selfSenderId: currentAccount?.did})
   const [input, setInput] = useState('')
   // Single in-progress image attachment for the next turn (one image per message).
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null)
@@ -220,18 +249,17 @@ export function AgentChatScreen({route}: Props) {
     voiceId: personaVoiceId,
   })
 
-  const doSend = useCallback(
-    (text: string) => {
-      if (!canSend(text, attachment, isStreaming)) return
-      const images = imagesForSend(attachment)
-      // Sending interrupts any ongoing agent speech (barge-in via text, too).
-      voice.stopSpeaking()
-      setInput('')
-      setAttachment(null)
-      send(text.trim(), {images: images.length > 0 ? images : undefined})
-    },
-    [send, voice, attachment, isStreaming],
-  )
+  // No manual useCallback: React Compiler memoizes this, and its inferred deps
+  // conflicted with a hand-written list once the screen was split per-thread.
+  const doSend = (text: string) => {
+    if (!canSend(text, attachment, isStreaming)) return
+    const images = imagesForSend(attachment)
+    // Sending interrupts any ongoing agent speech (barge-in via text, too).
+    voice.stopSpeaking()
+    setInput('')
+    setAttachment(null)
+    send(text.trim(), {images: images.length > 0 ? images : undefined})
+  }
 
   // Speak the assistant reply once a TEXT turn finishes streaming (if autoSpeak on).
   // In continuous voice mode the loop already speaks the reply, so skip it here to
@@ -400,22 +428,10 @@ export function AgentChatScreen({route}: Props) {
                 key={m.id}
                 message={m}
                 // Group threads attribute every message; 1:1 chat shows no per-message
-                // name. The user's own turns are "You" (matched by role OR by the row's
-                // stamped senderId, so a hydrated own-turn never shows the runtime's
-                // stored owner label). A settled agent turn uses the runtime-supplied
-                // sender name, falling back to the thread's agent name. A PENDING
-                // placeholder gets NO name until the runtime says who is replying —
-                // attributing it to the default persona claimed agents were "typing"
-                // when they weren't going to reply.
-                senderName={
-                  threadId
-                    ? m.role === 'user' || isSelfMessage(m)
-                      ? 'You'
-                      : m.pending && !m.senderName
-                        ? undefined
-                        : (m.senderName ?? agentName)
-                    : undefined
-                }
+                // name. See groupSenderName: "You" requires the row's stamped senderId
+                // to BE the current account (strict identity match) — role alone never
+                // decides, so another member's turn is always shown under THEIR name.
+                senderName={threadId ? groupSenderName(m) : undefined}
                 decideDisabled={isStreaming}
                 onDecision={(action, decision) => {
                   void decide(action, decision)

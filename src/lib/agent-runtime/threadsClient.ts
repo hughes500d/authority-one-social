@@ -425,28 +425,46 @@ export async function createThread(input: {
   }
 }
 
-/** GET /app/threads/:id/messages — per-thread history. Returns [] when unavailable. */
+/** Outcome of a per-thread history read: `ok` distinguishes a genuinely empty
+ *  thread from a failed read (no auth / non-2xx / network), so hydration can
+ *  retry a failure instead of settling on a false "no messages" screen. */
+export interface ThreadMessagesResult {
+  messages: ChatMessage[]
+  ok: boolean
+}
+
+/** GET /app/threads/:id/messages — per-thread history. Never throws. */
 export async function fetchThreadMessages(
   threadId: string,
-): Promise<ChatMessage[]> {
+): Promise<ThreadMessagesResult> {
   try {
     const headers = await authHeaders()
-    if (!headers) return []
+    if (!headers) return {messages: [], ok: false}
     const res = await fetch(threadMessagesUrl(threadId), {
       method: 'GET',
       headers,
     })
-    if (!res.ok) return []
+    if (!res.ok) {
+      logger.warn('threads: fetch messages non-ok', {
+        safeMessage: `status ${res.status}`,
+      })
+      return {messages: [], ok: false}
+    }
     const json = (await res.json()) as {messages?: unknown; history?: unknown}
     const rows = Array.isArray(json?.messages)
       ? json.messages
       : Array.isArray(json?.history)
         ? json.history
         : []
-    return rows.map(toThreadMessage).filter((m): m is ChatMessage => m !== null)
+    return {
+      messages: rows
+        .map(toThreadMessage)
+        .filter((m): m is ChatMessage => m !== null),
+      ok: true,
+    }
   } catch (e) {
     logger.warn('threads: fetch messages failed', {safeMessage: String(e)})
-    return []
+    return {messages: [], ok: false}
   }
 }
 
@@ -478,6 +496,9 @@ export async function sendToThread(
     // field name). Absent today — the UI falls back to the thread's agent name.
     const senderName =
       str(data?.senderName) ?? str(data?.author) ?? str(data?.from)
+    // Sender identity (DID/handle) when stamped — hydrated rows carry it, so the
+    // live reply should too, keeping self/other attribution consistent.
+    const senderId = str(data?.senderId)
     // A deliberate no-op: the runtime marks a turn it chose not to answer (e.g. an
     // agent in a group that wasn't addressed) with `status:'silent'` or `silent:true`.
     // A silent turn carries no text and must NOT draw a bubble.
@@ -497,6 +518,7 @@ export async function sendToThread(
         ? (data.mediaUrls as string[]).filter(u => typeof u === 'string')
         : [],
       ...(senderName ? {senderName} : {}),
+      ...(senderId ? {senderId} : {}),
       ...(silent ? {silent: true} : {}),
     }
     return {ok: true, signedOut: false, data: reply}

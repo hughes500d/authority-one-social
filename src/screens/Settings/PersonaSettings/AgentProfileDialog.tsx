@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {View} from 'react-native'
 import {Image} from 'expo-image'
 import {Trans, useLingui} from '@lingui/react/macro'
+import {countGraphemes} from 'unicode-segmenter/grapheme'
 
 import {
   AGENT_BIO_MAX_GRAPHEMES,
@@ -96,7 +97,13 @@ function ProfileEditorInner({
   const bioChanged = bioDraft !== null && bioDraft !== currentBio
   const hasChanges = nameChanged || bioChanged || !!avatar.url || !!banner.url
   const busy = avatar.busy || banner.busy || save.isPending
-  const canSave = hasChanges && !busy && !nameTooLong && !bioTooLong
+  // Only a field being SAVED can block the save: an inherited over-limit bio
+  // (untouched, so not sent) must not lock the whole form.
+  const canSave =
+    hasChanges &&
+    !busy &&
+    !(nameChanged && nameTooLong) &&
+    !(bioChanged && bioTooLong)
 
   const setSlot = (slot: ImageSlot, next: ImageDraft) =>
     slot === 'avatar' ? setAvatar(next) : setBanner(next)
@@ -141,6 +148,7 @@ function ProfileEditorInner({
     save.mutate(
       {
         agent,
+        did: profile.data?.did,
         ...(nameChanged ? {displayName: nameDraft ?? ''} : {}),
         ...(bioChanged ? {description: bioDraft ?? ''} : {}),
         ...(avatar.url ? {avatarUrl: avatar.url} : {}),
@@ -162,6 +170,19 @@ function ProfileEditorInner({
       : save.error.message
     : undefined
 
+  // The text inputs are uncontrolled (defaultValue) — mounting them before the
+  // profile arrives would freeze them empty. Gate the form on first load.
+  if (profile.isLoading && !profile.data) {
+    return (
+      <Dialog.ScrollableInner label={l`Edit agent profile`}>
+        <View style={[a.align_center, a.justify_center, a.py_5xl]}>
+          <Loader size="lg" />
+        </View>
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    )
+  }
+
   return (
     <Dialog.ScrollableInner label={l`Edit agent profile`}>
       <View style={[a.gap_lg]}>
@@ -181,14 +202,11 @@ function ProfileEditorInner({
               autoCapitalize="words"
             />
           </TextField.Root>
-          {nameTooLong ? (
-            <Text style={[a.text_xs, {color: t.palette.negative_500}]}>
-              <Trans>
-                Display names can be at most {AGENT_DISPLAY_NAME_MAX_GRAPHEMES}{' '}
-                characters.
-              </Trans>
-            </Text>
-          ) : null}
+          <GraphemeCounter
+            text={name}
+            maxCount={AGENT_DISPLAY_NAME_MAX_GRAPHEMES}
+            overLimitMessage={`Display names can be at most ${AGENT_DISPLAY_NAME_MAX_GRAPHEMES} characters.`}
+          />
         </View>
 
         <View style={[a.gap_xs]}>
@@ -205,13 +223,11 @@ function ProfileEditorInner({
               style={{minHeight: 80}}
             />
           </TextField.Root>
-          {bioTooLong ? (
-            <Text style={[a.text_xs, {color: t.palette.negative_500}]}>
-              <Trans>
-                Bios can be at most {AGENT_BIO_MAX_GRAPHEMES} characters.
-              </Trans>
-            </Text>
-          ) : null}
+          <GraphemeCounter
+            text={bio}
+            maxCount={AGENT_BIO_MAX_GRAPHEMES}
+            overLimitMessage={`Bios can be at most ${AGENT_BIO_MAX_GRAPHEMES} characters.`}
+          />
         </View>
 
         <ImageSlotEditor
@@ -311,6 +327,45 @@ function ProfileEditorInner({
       </View>
       <Dialog.Close />
     </Dialog.ScrollableInner>
+  )
+}
+
+/**
+ * Live grapheme count for a text field, red with an explicit message when over
+ * the limit. Fork strings never reach the compiled Lingui catalog (extraction is
+ * an upstream CI job), so interpolated Trans messages render their raw ICU
+ * placeholders — these strings are built in JS instead.
+ */
+function GraphemeCounter({
+  text,
+  maxCount,
+  overLimitMessage,
+}: {
+  text: string
+  maxCount: number
+  overLimitMessage: string
+}) {
+  const t = useTheme()
+  const count = countGraphemes(text)
+  const over = count > maxCount
+  return (
+    <View style={[a.flex_row, a.justify_between, a.gap_md]}>
+      <Text
+        style={[
+          a.text_xs,
+          a.flex_1,
+          over ? {color: t.palette.negative_500} : t.atoms.text_contrast_medium,
+        ]}>
+        {over ? overLimitMessage : ''}
+      </Text>
+      <Text
+        style={[
+          a.text_xs,
+          over ? {color: t.palette.negative_500} : t.atoms.text_contrast_medium,
+        ]}>
+        {count} / {maxCount}
+      </Text>
+    </View>
   )
 }
 
