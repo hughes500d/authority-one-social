@@ -72,3 +72,43 @@ const IMGPROXY_PRESET_RE =
 export function convertCdnPreset(uri: string, preset: ImgproxyPreset): string {
   return uri.replace(IMGPROXY_PRESET_RE, `$1${preset}$3`)
 }
+
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/avif': 'avif',
+  'image/svg+xml': 'svg',
+}
+
+/**
+ * Builds a download filename for an image that is not served with a
+ * Content-Disposition header (e.g. agent-chat media on R2, data URIs). The
+ * extension comes from the actual MIME type of the fetched bytes, not the URL,
+ * since object-store URLs may have no extension at all.
+ */
+export function imageDownloadFilename(uri: string, mimeType?: string): string {
+  const normalizedMime = mimeType?.split(';')[0].trim().toLowerCase() ?? ''
+  const extension = MIME_TO_EXTENSION[normalizedMime] ?? 'jpg'
+
+  let base = 'image'
+  if (!uri.startsWith('data:')) {
+    try {
+      const lastSegment = decodeURIComponent(
+        new URL(uri).pathname.split('/').filter(Boolean).at(-1) ?? '',
+      )
+      const stem = lastSegment
+        .replace(/\.[a-z0-9]+$/i, '')
+        .replace(/[^\w-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+      if (stem) {
+        base = stem
+      }
+    } catch {
+      // Unparseable URI: fall through to the generic base name.
+    }
+  }
+
+  return `${base}.${extension}`
+}
