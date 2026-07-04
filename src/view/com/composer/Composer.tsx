@@ -97,6 +97,7 @@ import {
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {useProfileQuery} from '#/state/queries/profile'
 import {resolveLinkQueryOptions} from '#/state/queries/resolve-link'
+import {getPostThreadV2Compat} from '#/state/queries/usePostThread/compat'
 import {useAgent, useSession} from '#/state/session'
 import {useComposerControls} from '#/state/shell/composer'
 import {type ComposerOpts, type OnPostSuccessData} from '#/state/shell/composer'
@@ -993,7 +994,7 @@ export const ComposePost = ({
             5,
             _e => true,
             async () => {
-              const res = await agent.app.bsky.unspecced.getPostThreadV2({
+              const res = await getPostThreadV2Compat(agent, {
                 anchor: postUri!,
                 above: false,
                 below: filteredThread.posts.length - 1,
@@ -2360,14 +2361,14 @@ function useKeyboardVerticalOffset() {
 async function whenAppViewReady(
   agent: BskyAgent,
   uri: string,
-  fn: (res: AppBskyUnspeccedGetPostThreadV2.Response) => boolean,
+  fn: (res: {data: AppBskyUnspeccedGetPostThreadV2.OutputSchema}) => boolean,
 ) {
   await until(
     5, // 5 tries
     1e3, // 1s delay between tries
     fn,
     () =>
-      agent.app.bsky.unspecced.getPostThreadV2({
+      getPostThreadV2Compat(agent, {
         anchor: uri,
         above: false,
         below: 0,

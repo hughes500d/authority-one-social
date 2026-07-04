@@ -462,9 +462,38 @@ describe('fetchThreadMessages (silent / blank suppression)', () => {
         {role: 'agent', message: 'from message field'}, // text carried under `message`
       ],
     })
-    const msgs = await fetchThreadMessages('t1')
-    const texts = msgs.map(m => m.text)
+    const res = await fetchThreadMessages('t1')
+    expect(res.ok).toBe(true)
+    const texts = res.messages.map(m => m.text)
     expect(texts).toEqual(['hello', 'real reply', 'from message field'])
+  })
+
+  it('reports ok:false (not "empty history") when auth or the fetch fails', async () => {
+    mockToken.mockResolvedValue(null) // signed out / token race
+    const noAuth = await fetchThreadMessages('t1')
+    expect(noAuth).toEqual({messages: [], ok: false})
+
+    mockToken.mockResolvedValue('tok')
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({}),
+      }),
+    ) as unknown as typeof fetch
+    const unauth = await fetchThreadMessages('t1')
+    expect(unauth).toEqual({messages: [], ok: false})
+
+    global.fetch = jest.fn(() => Promise.reject(new Error('network down')))
+    const netFail = await fetchThreadMessages('t1')
+    expect(netFail).toEqual({messages: [], ok: false})
+  })
+
+  it('reports ok:true with no rows for a genuinely empty thread', async () => {
+    mockToken.mockResolvedValue('tok')
+    global.fetch = okJson({messages: []})
+    const res = await fetchThreadMessages('t1')
+    expect(res).toEqual({messages: [], ok: true})
   })
 })
 

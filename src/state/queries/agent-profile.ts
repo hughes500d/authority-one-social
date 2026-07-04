@@ -29,7 +29,9 @@ export function useUpdateAgentProfileMutation() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (
-      input: AgentProfileInput,
+      // did is client-only: profile queries elsewhere key on the DID, while the
+      // dialog may be handed a handle, so invalidate under both.
+      input: AgentProfileInput & {did?: string},
     ): Promise<AgentProfileWriteResult> => {
       const res = await updateAgentProfile(input)
       if (res.ok) return res
@@ -48,6 +50,9 @@ export function useUpdateAgentProfileMutation() {
       // The agent's atproto profile changed: refresh its cached profile view (the
       // dialog previews read from it) and the owner-agents list (display names).
       void qc.invalidateQueries({queryKey: profileQueryKey(input.agent)})
+      if (input.did && input.did !== input.agent) {
+        void qc.invalidateQueries({queryKey: profileQueryKey(input.did)})
+      }
       void qc.invalidateQueries({queryKey: createOwnerAgentsQueryKey()})
     },
   })

@@ -149,6 +149,8 @@ export interface ChatTurnResult {
   /** Display name of the responding agent/persona (group threads). Optional — the
    *  runtime does not send this yet; see the group-attribution handover note. */
   senderName?: string
+  /** Identity (DID/handle) of the responding agent/persona, when stamped. */
+  senderId?: string
   /**
    * True when the runtime deliberately produced no reply (`status:'silent'` or a bare
    * `silent:true`) — e.g. an agent in a group that wasn't addressed. The UI renders NO
