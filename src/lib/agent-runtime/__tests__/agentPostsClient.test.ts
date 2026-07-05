@@ -227,6 +227,60 @@ describe('editAgentPost', () => {
     expect(res.uri).toBe('at://x/app.bsky.feed.post/1')
   })
 
+  it('sends imageUrls verbatim — including [] to CLEAR — and omits it when untouched', async () => {
+    mockFetch.mockResolvedValue(jsonRes(200, {ok: true}) as never)
+
+    // Field absent -> embed untouched.
+    await editAgentPost({agent: 'a', uri: 'at://x/p/1', text: 't'})
+    let [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect('imageUrls' in JSON.parse(init.body as string)).toBe(false)
+
+    // Explicit [] -> clear images (must NOT be stripped like postAsAgent does).
+    await editAgentPost({
+      agent: 'a',
+      uri: 'at://x/p/1',
+      text: 't',
+      imageUrls: [],
+    })
+    ;[, init] = mockFetch.mock.calls[1] as [string, RequestInit]
+    let body = JSON.parse(init.body as string) as Record<string, unknown>
+    expect(body.imageUrls).toEqual([])
+
+    // Final ordered set: kept existing urls + newly hosted urls.
+    await editAgentPost({
+      agent: 'a',
+      uri: 'at://x/p/1',
+      text: 't',
+      imageUrls: ['https://cdn.test/keep.jpg', 'https://r2.test/new.png'],
+    })
+    ;[, init] = mockFetch.mock.calls[2] as [string, RequestInit]
+    body = JSON.parse(init.body as string) as Record<string, unknown>
+    expect(body.imageUrls).toEqual([
+      'https://cdn.test/keep.jpg',
+      'https://r2.test/new.png',
+    ])
+  })
+
+  it('surfaces embed-type-conflict when the post has a non-image embed', async () => {
+    mockFetch.mockResolvedValue(
+      jsonRes(400, {
+        error: 'post has a video embed',
+        code: 'embed-type-conflict',
+      }) as never,
+    )
+
+    const res = await editAgentPost({
+      agent: 'a',
+      uri: 'at://y/p/1',
+      text: 't',
+      imageUrls: ['https://r2.test/new.png'],
+    })
+
+    expect(res.ok).toBe(false)
+    expect(res.signedOut).toBe(false)
+    expect(res.code).toBe('embed-type-conflict')
+  })
+
   it('surfaces repo-mismatch / too-long codes as validation errors, not sign-out', async () => {
     mockFetch.mockResolvedValue(
       jsonRes(400, {
