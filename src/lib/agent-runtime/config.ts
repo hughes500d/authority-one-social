@@ -106,6 +106,49 @@ export const HISTORY_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/history`
 export const TTS_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/tts`
 
 /**
+ * PUBLIC "TALK TO <AGENT>" visitor chat (metered, refreshing budget — §3.6 / E7).
+ * UNAUTHENTICATED public surface: a non-owner / anonymous visitor talks to a specific
+ * agent's persona to evaluate it. NO owner bearer (an optional viewer bearer only keys
+ * the refreshing budget per-DID). The runtime runs a STRUCTURALLY FENCED persona turn
+ * (read-only, no tools/writes) and returns text + a `hasVoice` hint. See
+ * pilot-agent-runtime/src/public-chat-v2.js.
+ */
+export const PUBLIC_CHAT_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/public/chat`
+
+/**
+ * Companion public voice proxy. POST {agent, text, sessionId} — the runtime resolves the
+ * agent's ASSIGNED ElevenLabs voice SERVER-SIDE (a client voiceId is ignored) and streams
+ * MP3 under the SAME public budget/rate limits. FAIL-OPEN: non-2xx ⇒ the client shows text
+ * only (no audio). The EL key never leaves the Worker.
+ */
+export const PUBLIC_TTS_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/public/tts`
+
+/**
+ * CLIENT-SIDE feature flag for the public "Talk to <Agent>" button. Keeps the entry point
+ * DARK until BOTH the runtime flag (PUBLIC_CHAT_ENABLED on the Worker) AND this build flag
+ * are on — so the button never shows before the runtime surface is live. Default OFF.
+ * Set EXPO_PUBLIC_PUBLIC_CHAT_ENABLED=true (Cloudflare Pages env) to reveal it.
+ */
+export const PUBLIC_CHAT_ENABLED =
+  /^(1|true|yes|on)$/i.test(String(process.env.EXPO_PUBLIC_PUBLIC_CHAT_ENABLED ?? '').trim())
+
+/**
+ * Handle suffix that marks an atproto profile as an AGENT (vs a human) — agents live on the
+ * self-hosted PDS, so their handles end with the PDS host (e.g. `bull.pds.authority-one.com`).
+ * Overridable per-build via EXPO_PUBLIC_AGENT_HANDLE_SUFFIX. Used to show the public
+ * "Talk to <Agent>" button only on agent profiles.
+ */
+export const AGENT_HANDLE_SUFFIX = (
+  process.env.EXPO_PUBLIC_AGENT_HANDLE_SUFFIX ?? 'pds.authority-one.com'
+).toLowerCase()
+
+/** Is this handle an AuthorityOne agent handle (lives on the PDS host)? PURE. */
+export function isAgentHandle(handle?: string | null): boolean {
+  const h = String(handle ?? '').trim().toLowerCase()
+  return !!h && (h === AGENT_HANDLE_SUFFIX || h.endsWith('.' + AGENT_HANDLE_SUFFIX))
+}
+
+/**
  * Persona/avatar endpoints (owner-scoped from the bearer). The runtime owns the
  * persona list, the active selection, the available voices, and folds each
  * persona's `personality` into the system prompt server-side — the client only

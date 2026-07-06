@@ -150,6 +150,21 @@ export {
   type ThreadsResult,
   type ThreadWriteResult,
 } from './threadsClient'
+export {
+  AGENT_HANDLE_SUFFIX,
+  isAgentHandle,
+  PUBLIC_CHAT_ENABLED,
+  PUBLIC_CHAT_ENDPOINT,
+  PUBLIC_TTS_ENDPOINT,
+} from './config'
+export {playAgentClipBase64} from './playAgentClip'
+export {
+  fetchPublicAgentAudioBase64,
+  publicChat,
+  type PublicChatConversionCard,
+  type PublicChatRemaining,
+  type PublicChatResult,
+} from './publicChatClient'
 export {bytesToBase64, fetchBobAudioBase64} from './tts'
 export * from './types'
 export {
