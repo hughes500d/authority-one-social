@@ -4,14 +4,13 @@ import {IS_WEB} from '#/env'
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window')
 
-const IFRAME_HOST = IS_WEB
-  ? // @ts-ignore only for web
-    window.location.host === 'localhost:8100'
-    ? 'http://localhost:8100'
-    : 'https://bsky.app'
-  : __DEV__ && !process.env.JEST_WORKER_ID
-    ? 'http://localhost:8100'
-    : 'https://bsky.app'
+// YouTube plays via a DIRECT youtube-nocookie embed (no self-hosted or bsky.app
+// `/iframe/youtube.html` wrapper). The fork does not serve that wrapper (the
+// web build skips post-web-build.js and Cloudflare Pages has a blanket SPA
+// fallback), so the old `${IFRAME_HOST}/iframe/youtube.html` player URL resolved
+// to the app's own "Page not found" instead of a player. Embedding
+// youtube-nocookie removes the wrapper dependency entirely.
+const YOUTUBE_EMBED_HOST = 'https://www.youtube-nocookie.com'
 
 export const embedPlayerSources = [
   'youtube',
@@ -117,7 +116,7 @@ export function parseEmbedPlayerFromUrl(
       return {
         type: 'youtube_video',
         source: 'youtube',
-        playerUri: `${IFRAME_HOST}/iframe/youtube.html?videoId=${videoId}&start=${seek}`,
+        playerUri: `${YOUTUBE_EMBED_HOST}/embed/${videoId}?start=${seek}&autoplay=1&playsinline=1`,
       }
     }
   }
@@ -143,7 +142,7 @@ export function parseEmbedPlayerFromUrl(
         type: isShorts ? 'youtube_short' : 'youtube_video',
         source: isShorts ? 'youtubeShorts' : 'youtube',
         hideDetails: isShorts ? true : undefined,
-        playerUri: `${IFRAME_HOST}/iframe/youtube.html?videoId=${videoId}&start=${seek}`,
+        playerUri: `${YOUTUBE_EMBED_HOST}/embed/${videoId}?start=${seek}&autoplay=1&playsinline=1`,
       }
     }
   }
