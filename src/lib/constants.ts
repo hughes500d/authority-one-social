@@ -136,6 +136,14 @@ export const IMAGE_SIZE_CONFIG_2K_1MB = {
   maxSize: 1000000,
 }
 
+/** Profile avatar/banner pre-shrink: 100KB of headroom under the PDS 1MB blob
+ * cap so client re-encode jitter can't tip an upload back over the wall (the
+ * runtime auto-shrinks server-side too — this just avoids the round trip). */
+export const IMAGE_SIZE_CONFIG_PROFILE = {
+  maxDimension: 2000,
+  maxSize: 900000,
+}
+
 export const STAGING_LINK_META_PROXY =
   'https://cardyb.staging.bsky.dev/v1/extract?url='
 
