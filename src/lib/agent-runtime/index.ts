@@ -42,7 +42,17 @@ export {
   PUBLIC_CHAT_ENABLED,
   PUBLIC_CHAT_ENDPOINT,
   PUBLIC_TTS_ENDPOINT,
+  VIDEO_POSTS_ENABLED,
+  VIDEO_UPLOAD_ENDPOINT,
+  VIDEO_UPLOAD_MAX_BYTES,
+  VIDEO_UPLOAD_MIME_TYPES,
 } from './config'
+export {
+  uploadAuthorityVideo,
+  type VideoToUpload,
+  type VideoUploadErrorCode,
+  type VideoUploadResult,
+} from './videoUploadClient'
 export {
   deleteContextEvent,
   fetchRecentContext,

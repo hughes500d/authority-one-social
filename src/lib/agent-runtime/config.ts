@@ -83,6 +83,44 @@ export const AGENTS_PROFILE_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/agents/pro
 export const CHAT_IMAGE_UPLOAD_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/media/upload`
 
 /**
+ * VIDEO upload endpoint (owner-scoped). The app POSTs the RAW video bytes with a
+ * video `Content-Type` (video/mp4|quicktime|webm); the runtime commits the
+ * original to R2 (the pipeline's transaction boundary), kicks the Cloudflare
+ * Stream + Sensus fan-out, and returns `{videoId, status, originalUrl}`. The
+ * post is then published via /app/agents/posts carrying that `videoId`, which
+ * the runtime resolves back to the bytes to build app.bsky.embed.video
+ * server-side (Option A). Playback hydrates once Stream is configured + ready;
+ * until then the post is published and renders text-only (graceful degrade).
+ */
+export const VIDEO_UPLOAD_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/media/video`
+/** GET the two-leg status for an uploaded video (playback readiness poll). */
+export const videoStatusUrl = (videoId: string) =>
+  `${VIDEO_UPLOAD_ENDPOINT}/${encodeURIComponent(videoId)}`
+/**
+ * Phase-1 upload cap enforced by the runtime (`VIDEO_MAX_BYTES` = 95MB Worker
+ * body headroom). The app validates against the SAME number so an over-size
+ * pick fails fast client-side instead of at the edge.
+ */
+export const VIDEO_UPLOAD_MAX_BYTES = 95 * 1024 * 1024
+/** Video MIME types the runtime accepts (matches its VIDEO_MIME regex). */
+export const VIDEO_UPLOAD_MIME_TYPES = [
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+] as const
+
+/**
+ * CLIENT-SIDE kill switch for composing VIDEO posts. DEFAULT ON — the video
+ * button + upload path are live unless explicitly disabled by setting
+ * EXPO_PUBLIC_VIDEO_POSTS_ENABLED to a falsey value (0/false/no/off) in the
+ * Cloudflare Pages env. When OFF the button is hidden and no video code runs, so
+ * normal image/GIF/text composing is byte-identical to before.
+ */
+export const VIDEO_POSTS_ENABLED = !/^(0|false|no|off)$/i.test(
+  String(process.env.EXPO_PUBLIC_VIDEO_POSTS_ENABLED ?? '').trim(),
+)
+
+/**
  * Server-side AI image generation. POST {prompt, references?:[url]} -> {url,
  * contentType} — the runtime generates and HOSTS the image, returning a public url
  * usable anywhere a hosted image url is accepted (e.g. the agent profile editor).
