@@ -222,6 +222,16 @@ export const SOCIAL_AUTONOMY_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/social-au
 export const USAGE_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/usage`
 
 /**
+ * Owner-facing BILLING/PLAN read (read-only). GET /app/billing returns the
+ * customer's current tier + token allowance, this-cycle usage against it, the
+ * plan catalog, whether Stripe is armed (`billingArmed`), and the AppView
+ * handoff URLs (Upgrade → /billing checkout, Manage → /billing/portal). While
+ * Stripe is disabled the handoff URLs resolve to the AppView's own in-preview
+ * stub page. Resolved server-side from the session — no owner id is ever sent.
+ */
+export const BILLING_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/billing`
+
+/**
  * "For You" engagement endpoints (owner-scoped). `signals` ingests batched
  * per-item engagement events; `profile` returns the learned interest weights used
  * to rank the feed. See the M2 contract in the runtime.

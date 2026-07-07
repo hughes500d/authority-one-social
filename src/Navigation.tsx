@@ -111,6 +111,7 @@ import {AboutSettingsScreen} from '#/screens/Settings/AboutSettings'
 import {AccessibilitySettingsScreen} from '#/screens/Settings/AccessibilitySettings'
 import {AccountSettingsScreen} from '#/screens/Settings/AccountSettings'
 import {ActivityPrivacySettingsScreen} from '#/screens/Settings/ActivityPrivacySettings'
+import {AgentBillingScreen} from '#/screens/Settings/AgentBilling'
 import {AgentUsageScreen} from '#/screens/Settings/AgentUsage'
 import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
@@ -475,6 +476,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => AgentUsageScreen}
         options={{
           title: title(msg`Agent Usage`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="AgentBilling"
+        getComponent={() => AgentBillingScreen}
+        options={{
+          title: title(msg`Plan & Billing`),
           requireAuth: true,
         }}
       />

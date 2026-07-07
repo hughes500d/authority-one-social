@@ -61,6 +61,7 @@ export const router = new Router<AllNavigatableRoutes>({
   ],
   MyAgents: '/settings/agents',
   AgentUsage: '/settings/agents/usage',
+  AgentBilling: '/settings/agents/billing',
   AgentHub: '/agents/:agent',
   ChatList: '/chats',
   NewGroup: '/chats/new-group',

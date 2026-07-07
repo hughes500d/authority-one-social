@@ -78,6 +78,9 @@ export type CommonNavigatorParams = {
   MyAgents: undefined
   // Authority One: per-agent usage rollup ("agent burn") across ALL owned agents.
   AgentUsage: undefined
+  // Authority One: customer plan & billing — current tier, allowance, usage,
+  // the three tiers, and Upgrade/Manage handoffs to the AppView Stripe flows.
+  AgentBilling: undefined
   // Authority One: per-agent hub — 1:1 chat + owner management (posts, profile,
   // settings) for ONE owned agent. `agent` = the agent's full handle (or DID).
   AgentHub: {agent: string}

@@ -5,8 +5,10 @@ import {
   type CreateAgentResult,
   createOwnerAgent,
   fetchOwnerAgents,
+  fetchOwnerBilling,
   fetchOwnerUsage,
   type OwnerAgent,
+  type OwnerBillingResult,
   type OwnerUsageResult,
   type PauseAgentResult,
   pauseOwnerAgent,
@@ -22,6 +24,23 @@ export const createOwnerAgentsQueryKey = () =>
 const ownerUsageQueryKeyRoot = 'ownerUsage'
 export const createOwnerUsageQueryKey = (window: UsageWindow) =>
   createQueryKey(ownerUsageQueryKeyRoot, {window})
+
+const ownerBillingQueryKeyRoot = 'ownerBilling'
+export const createOwnerBillingQueryKey = () =>
+  createQueryKey(ownerBillingQueryKeyRoot, {})
+
+/**
+ * The current owner's plan/tier + allowance + this-cycle usage (GET /app/billing).
+ * Read-only; resolves to a null billing state when signed out / unreachable —
+ * never throws.
+ */
+export function useOwnerBillingQuery() {
+  return useQuery<OwnerBillingResult>({
+    queryKey: createOwnerBillingQueryKey(),
+    queryFn: () => fetchOwnerBilling(),
+    staleTime: STALE.MINUTES.ONE,
+  })
+}
 
 /**
  * Per-agent usage rollup for the current owner (GET /app/usage). Read-only;

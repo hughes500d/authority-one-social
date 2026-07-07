@@ -113,6 +113,18 @@ export function MyAgentsScreen({}: Props) {
           </View>
           <View style={[a.px_lg, a.py_sm]}>
             <Button
+              label={l`Plan and billing`}
+              size="large"
+              variant="outline"
+              color="secondary"
+              onPress={() => navigation.navigate('AgentBilling')}>
+              <ButtonText>
+                <Trans>Plan & Billing</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+          <View style={[a.px_lg, a.py_sm]}>
+            <Button
               label={l`Create a new agent`}
               size="large"
               variant="solid"

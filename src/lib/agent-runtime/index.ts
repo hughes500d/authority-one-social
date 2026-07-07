@@ -26,9 +26,21 @@ export {
   setSupabaseTokenProvider,
   type TokenProvider,
 } from './authToken'
+export {
+  fetchOwnerBilling,
+  formatTokenAllowance,
+  normalizeOwnerBilling,
+  type OwnerBilling,
+  type OwnerBillingResult,
+  PLAN_META,
+  PLAN_ORDER,
+  type PlanMeta,
+  type PlanTier,
+} from './billingClient'
 export {AgentAuthError, streamChat, type StreamHandlers} from './chatClient'
 export {
   AGENT_RUNTIME_BASE_URL,
+  BILLING_ENDPOINT,
   BOB_VOICE_ID,
   CHAT_ENDPOINT,
   CHAT_IMAGE_UPLOAD_ENDPOINT,
@@ -47,12 +59,6 @@ export {
   VIDEO_UPLOAD_MAX_BYTES,
   VIDEO_UPLOAD_MIME_TYPES,
 } from './config'
-export {
-  uploadAuthorityVideo,
-  type VideoToUpload,
-  type VideoUploadErrorCode,
-  type VideoUploadResult,
-} from './videoUploadClient'
 export {
   deleteContextEvent,
   fetchRecentContext,
@@ -189,6 +195,12 @@ export {
   type UsageSource,
   type UsageWindow,
 } from './usageClient'
+export {
+  uploadAuthorityVideo,
+  type VideoToUpload,
+  type VideoUploadErrorCode,
+  type VideoUploadResult,
+} from './videoUploadClient'
 export {
   addLibraryVoice,
   type BuiltinVoice,
