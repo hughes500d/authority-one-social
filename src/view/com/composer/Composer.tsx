@@ -2597,7 +2597,7 @@ function AuthorityVideoChip({
   let label = state.filename
   if (state.status === 'uploading') {
     const pct = Math.round(state.progress * 100)
-    label = pct > 0 ? l`Uploading video… ${pct}%` : l`Uploading video…`
+    label = pct > 0 ? `Uploading video… ${pct}%` : l`Uploading video…`
   } else if (state.status === 'processing') {
     label = l`Processing video…`
   } else if (state.status === 'ready') {
