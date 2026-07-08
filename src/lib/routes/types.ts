@@ -78,6 +78,9 @@ export type CommonNavigatorParams = {
   MyAgents: undefined
   // Authority One: per-agent usage rollup ("agent burn") across ALL owned agents.
   AgentUsage: undefined
+  // Authority One: READ-ONLY mirror of the agent's SMS/MMS group conversations
+  // (view / share a read-only link / export a transcript). No posting from here.
+  GroupConversations: undefined
   // Authority One: customer plan & billing — current tier, allowance, usage,
   // the three tiers, and Upgrade/Manage handoffs to the AppView Stripe flows.
   AgentBilling: undefined

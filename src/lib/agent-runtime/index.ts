@@ -196,6 +196,19 @@ export {
   type UsageWindow,
 } from './usageClient'
 export {
+  downloadGroupExport,
+  fetchGroupThread,
+  fetchOwnerGroups,
+  fetchShareStatus,
+  type MirrorGroup,
+  type MirrorGroupMeta,
+  type MirrorMedia,
+  type MirrorMessage,
+  type MirrorThread,
+  setShare,
+  type ShareStatus,
+} from './groupMirrorClient'
+export {
   getVideoStatus,
   uploadAuthorityVideo,
   type VideoStatusResult,
