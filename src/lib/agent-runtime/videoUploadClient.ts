@@ -1,10 +1,10 @@
 import {logger} from '#/logger'
-
 import {getSupabaseAccessToken} from './authToken'
 import {
   VIDEO_UPLOAD_ENDPOINT,
   VIDEO_UPLOAD_MAX_BYTES,
   VIDEO_UPLOAD_MIME_TYPES,
+  videoStatusUrl,
 } from './config'
 
 /**
@@ -129,18 +129,32 @@ export async function uploadAuthorityVideo(
         }
       }
       xhr.onload = () => {
-        let body: {videoId?: unknown; status?: unknown; originalUrl?: unknown; error?: unknown; code?: unknown} = {}
+        let body: {
+          videoId?: unknown
+          status?: unknown
+          originalUrl?: unknown
+          error?: unknown
+          code?: unknown
+        } = {}
         try {
           body = JSON.parse(xhr.responseText || '{}')
         } catch {
           body = {}
         }
-        if (xhr.status >= 200 && xhr.status < 300 && typeof body.videoId === 'string') {
+        if (
+          xhr.status >= 200 &&
+          xhr.status < 300 &&
+          typeof body.videoId === 'string'
+        ) {
           settle({
             ok: true,
             videoId: body.videoId,
-            status: typeof body.status === 'string' ? body.status : 'processing',
-            originalUrl: typeof body.originalUrl === 'string' ? body.originalUrl : undefined,
+            status:
+              typeof body.status === 'string' ? body.status : 'processing',
+            originalUrl:
+              typeof body.originalUrl === 'string'
+                ? body.originalUrl
+                : undefined,
           })
           return
         }
@@ -148,7 +162,8 @@ export async function uploadAuthorityVideo(
           settle({
             ok: false,
             code: 'unconfigured',
-            error: 'Video hosting is not configured yet. Please try again later.',
+            error:
+              'Video hosting is not configured yet. Please try again later.',
           })
           return
         }
@@ -169,17 +184,53 @@ export async function uploadAuthorityVideo(
         settle({
           ok: false,
           code: 'network',
-          error: 'Network error while uploading the video. Check your connection and try again.',
+          error:
+            'Network error while uploading the video. Check your connection and try again.',
         })
       xhr.send(blob)
     })
   } catch (e) {
     logger.warn('authority video upload failed', {safeMessage: String(e)})
-    return {ok: false, code: 'network', error: 'Could not upload the video. Please try again.'}
+    return {
+      ok: false,
+      code: 'network',
+      error: 'Could not upload the video. Please try again.',
+    }
   }
 }
 
 function sizeError(): string {
   const mb = Math.floor(VIDEO_UPLOAD_MAX_BYTES / (1024 * 1024))
   return `That video is too large. The maximum size is ${mb} MB.`
+}
+
+export type VideoStreamState = string
+
+export type VideoStatusResult =
+  | {ok: true; videoId: string; streamState: VideoStreamState}
+  | {ok: false; error: string}
+
+/**
+ * Poll the two-leg status for an uploaded videoId. Returns the Cloudflare Stream
+ * transcoding state so the composer can gate submission until stream.state === 'ready'.
+ */
+export async function getVideoStatus(
+  videoId: string,
+): Promise<VideoStatusResult> {
+  try {
+    const token = await getSupabaseAccessToken()
+    if (!token) return {ok: false, error: 'You are signed out.'}
+    const res = await fetch(videoStatusUrl(videoId), {
+      headers: {Authorization: `Bearer ${token}`},
+    })
+    if (!res.ok) {
+      return {ok: false, error: `Video status check failed (${res.status}).`}
+    }
+    const body = (await res.json()) as {stream?: {state?: string}}
+    const streamState: VideoStreamState = body?.stream?.state ?? 'pending'
+    return {ok: true, videoId, streamState}
+  } catch (e) {
+    logger.warn('authority video status check failed', {safeMessage: String(e)})
+    return {ok: false, error: 'Network error checking video status.'}
+  }
 }

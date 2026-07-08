@@ -196,7 +196,10 @@ export {
   type UsageWindow,
 } from './usageClient'
 export {
+  getVideoStatus,
   uploadAuthorityVideo,
+  type VideoStatusResult,
+  type VideoStreamState,
   type VideoToUpload,
   type VideoUploadErrorCode,
   type VideoUploadResult,

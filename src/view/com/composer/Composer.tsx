@@ -61,6 +61,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useQueries, useQueryClient} from '@tanstack/react-query'
 
 import {
+  getVideoStatus,
   postAsAgent,
   uploadAuthorityVideo,
   uploadChatImage,
@@ -124,11 +125,11 @@ import {Gallery} from '#/view/com/composer/photos/Gallery'
 import {OpenCameraBtn} from '#/view/com/composer/photos/OpenCameraBtn'
 import {SelectGifBtn} from '#/view/com/composer/photos/SelectGifBtn'
 import {SuggestedLanguage} from '#/view/com/composer/select-language/SuggestedLanguage'
-import {SelectVideoBtn} from '#/view/com/composer/videos/SelectVideoBtn'
 // TODO: Prevent naming components that coincide with RN primitives
 // due to linting false positives
 import {TextInput} from '#/view/com/composer/text-input/TextInput'
 import {ThreadgateBtn} from '#/view/com/composer/threadgate/ThreadgateBtn'
+import {SelectVideoBtn} from '#/view/com/composer/videos/SelectVideoBtn'
 import {SubtitleDialogBtn} from '#/view/com/composer/videos/SubtitleDialog'
 import {VideoPreview} from '#/view/com/composer/videos/VideoPreview'
 import {VideoTranscodeProgress} from '#/view/com/composer/videos/VideoTranscodeProgress'
@@ -276,6 +277,12 @@ type AuthorityVideoState =
       progress: number
       abort: AbortController
     }
+  | {
+      status: 'processing'
+      filename: string
+      videoId: string
+      abort: AbortController
+    }
   | {status: 'ready'; filename: string; videoId: string}
   | {status: 'error'; filename: string; error: string}
 
@@ -330,7 +337,9 @@ export const ComposePost = ({
 
   const onClearAuthorityVideo = useCallback(() => {
     setAuthorityVideo(prev => {
-      if (prev?.status === 'uploading') prev.abort.abort()
+      if (prev?.status === 'uploading' || prev?.status === 'processing') {
+        prev.abort.abort()
+      }
       return null
     })
   }, [])
@@ -361,17 +370,69 @@ export const ComposePost = ({
                 : cur,
             ),
         },
-      ).then(res => {
+      ).then(async (res: Awaited<ReturnType<typeof uploadAuthorityVideo>>) => {
         if (abort.signal.aborted) return
+        if (!res.ok) {
+          // Capture narrowed values before entering setState callback.
+          const code = res.code
+          const errMsg = res.error
+          setAuthorityVideo(cur => {
+            if (!cur || cur.status !== 'uploading' || cur.abort !== abort)
+              return cur
+            if (code === 'canceled') return null
+            return {status: 'error', filename, error: errMsg}
+          })
+          return
+        }
+        // Phase 1 complete: bytes in R2, Stream transcoding queued.
+        // Wait for stream.state === 'ready' before letting the user submit,
+        // so buildVideoEmbed can write onePlayback into the record.
+        const videoId = res.videoId
         setAuthorityVideo(cur => {
-          // Ignore a stale result if a newer selection superseded this one.
-          if (!cur || cur.status !== 'uploading' || cur.abort !== abort) {
+          if (!cur || cur.status !== 'uploading' || cur.abort !== abort)
             return cur
-          }
-          if (res.ok) return {status: 'ready', filename, videoId: res.videoId}
-          if (res.code === 'canceled') return null
-          return {status: 'error', filename, error: res.error}
+          return {status: 'processing', filename, videoId, abort}
         })
+        let failures = 0
+        while (!abort.signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 2500))
+          if (abort.signal.aborted) break
+          const statusResult = await getVideoStatus(videoId)
+          if (!statusResult.ok) {
+            failures++
+            if (failures >= 6) {
+              const errMsg = statusResult.error
+              setAuthorityVideo(cur => {
+                if (!cur || cur.status !== 'processing' || cur.abort !== abort)
+                  return cur
+                return {status: 'error', filename, error: errMsg}
+              })
+              return
+            }
+            continue
+          }
+          failures = 0
+          if (statusResult.streamState === 'ready') {
+            setAuthorityVideo(cur => {
+              if (!cur || cur.status !== 'processing' || cur.abort !== abort)
+                return cur
+              return {status: 'ready', filename, videoId}
+            })
+            return
+          }
+          if (statusResult.streamState === 'error') {
+            setAuthorityVideo(cur => {
+              if (!cur || cur.status !== 'processing' || cur.abort !== abort)
+                return cur
+              return {
+                status: 'error',
+                filename,
+                error: l`Video processing failed. Please try again.`,
+              }
+            })
+            return
+          }
+        }
       })
     },
     [l],
@@ -993,7 +1054,9 @@ export const ComposePost = ({
   // With an Authority One video attached, posting is gated on the upload being
   // READY (a ready video may post with no caption text; uploading/errored blocks
   // publish until the user waits or removes it).
-  const canPost = authorityVideo ? authorityVideo.status === 'ready' : baseCanPost
+  const canPost = authorityVideo
+    ? authorityVideo.status === 'ready'
+    : baseCanPost
 
   const getFilteredThread = useCallback((): {
     type: 'none' | 'trailing-only' | 'non-trailing'
@@ -1070,7 +1133,9 @@ export const ComposePost = ({
           throw new Error(
             authorityVideo.status === 'uploading'
               ? l`Your video is still uploading. Please wait a moment.`
-              : l`That video couldn't be uploaded. Remove it and try again.`,
+              : authorityVideo.status === 'processing'
+                ? l`Your video is still processing. Please wait a moment.`
+                : l`That video couldn't be uploaded. Remove it and try again.`,
           )
         }
         if (filteredThread.posts.length > 1) {
@@ -2533,6 +2598,8 @@ function AuthorityVideoChip({
   if (state.status === 'uploading') {
     const pct = Math.round(state.progress * 100)
     label = pct > 0 ? l`Uploading video… ${pct}%` : l`Uploading video…`
+  } else if (state.status === 'processing') {
+    label = l`Processing video…`
   } else if (state.status === 'ready') {
     label = l`Video ready`
   } else if (state.status === 'error') {
@@ -2541,7 +2608,7 @@ function AuthorityVideoChip({
 
   return (
     <ToolbarWrapper style={[a.flex_row, a.align_center, {paddingVertical: 5}]}>
-      {state.status === 'uploading' ? (
+      {state.status === 'uploading' || state.status === 'processing' ? (
         <ActivityIndicator size="small" />
       ) : state.status === 'ready' ? (
         <CircleCheckIcon size="sm" fill={t.palette.positive_500} />
