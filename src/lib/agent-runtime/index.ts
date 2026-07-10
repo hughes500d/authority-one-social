@@ -217,8 +217,12 @@ export {
   type UsageWindow,
 } from './usageClient'
 export {
+  fetchVideoEmbedSource,
   getVideoStatus,
   uploadAuthorityVideo,
+  type VideoEmbedMeta,
+  type VideoEmbedSource,
+  type VideoEmbedSourceResult,
   type VideoStatusResult,
   type VideoStreamState,
   type VideoToUpload,
