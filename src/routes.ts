@@ -95,6 +95,9 @@ export const router = new Router<AllNavigatableRoutes>({
   Messages: '/messages',
   MessagesSettings: '/messages/settings',
   MessagesInbox: '/messages/inbox',
+  // Placed before the `:conversation` param route so this 3-segment literal
+  // path resolves to the SMS-group mirror, never the DM conversation route.
+  MessagesSmsGroupThread: '/messages/sms-group/:sid',
   MessagesConversation: '/messages/:conversation',
   MessagesConversationSettings: '/messages/:conversation/settings',
   MessagesJoinRequests: '/messages/:conversation/requests',

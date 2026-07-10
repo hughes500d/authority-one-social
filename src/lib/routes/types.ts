@@ -111,6 +111,10 @@ export type CommonNavigatorParams = {
   MessagesJoinRequests: {conversation: string}
   MessagesSettings: undefined
   MessagesInbox: undefined
+  // Read-only mirror of one SMS/MMS group (opened from the "SMS groups" section
+  // on the Chats page). `sid` = Twilio Conversations SID; `name` is an optional
+  // display-title hint (the thread endpoint also returns the group title).
+  MessagesSmsGroupThread: {sid: string; name?: string}
   NotificationsActivityList: {posts: string}
   LegacyNotificationSettings: undefined
   Feeds: undefined

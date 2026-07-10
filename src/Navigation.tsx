@@ -91,6 +91,7 @@ import {MessagesConversationSettingsScreen} from '#/screens/Messages/Conversatio
 import {MessagesInboxScreen} from '#/screens/Messages/Inbox'
 import {MessagesJoinRequestsScreen} from '#/screens/Messages/JoinRequests'
 import {MessagesSettingsScreen} from '#/screens/Messages/Settings'
+import {MessagesSmsGroupThreadScreen} from '#/screens/Messages/SmsGroupThread'
 import {ModerationScreen} from '#/screens/Moderation'
 import {Screen as ModerationVerificationSettings} from '#/screens/Moderation/VerificationSettings'
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
@@ -634,6 +635,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           options={{title: title(msg`Chat request inbox`), requireAuth: true}}
         />
       </Stack.Group>
+      <Stack.Screen
+        name="MessagesSmsGroupThread"
+        getComponent={() => MessagesSmsGroupThreadScreen}
+        options={{title: title(msg`SMS group`), requireAuth: true}}
+      />
       <Stack.Screen
         name="NotificationsActivityList"
         getComponent={() => NotificationsActivityListScreen}

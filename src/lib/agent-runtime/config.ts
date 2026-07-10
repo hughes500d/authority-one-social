@@ -241,6 +241,24 @@ export const KNOWLEDGE_SUPPORTED_EXTS = ['.txt', '.md', '.csv'] as const
 export const USAGE_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/usage`
 
 /**
+ * READ-ONLY SMS/MMS GROUP MIRROR (owner-scoped). The SMS groups an owner's agent
+ * hosts live in Twilio Conversations; these routes read that history WITHOUT ever
+ * returning a raw phone number (display names only) and WITHOUT any post path.
+ *   GET  /app/groups?agent=<handle>            → list the agent's groups
+ *   GET  /app/groups/:sid/thread               → normalized (phone-free) messages
+ *   GET  /app/groups/:sid/export?format=…       → downloadable transcript
+ *   GET  /app/groups/:sid/share                 → current read-only share-link status
+ *   POST /app/groups/:sid/share {action}        → create/rotate or revoke the link
+ */
+export const OWNER_GROUPS_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/groups`
+export const groupThreadUrl = (sid: string) =>
+  `${OWNER_GROUPS_ENDPOINT}/${encodeURIComponent(sid)}/thread`
+export const groupExportUrl = (sid: string, format: string) =>
+  `${OWNER_GROUPS_ENDPOINT}/${encodeURIComponent(sid)}/export?format=${encodeURIComponent(format)}`
+export const groupShareUrl = (sid: string) =>
+  `${OWNER_GROUPS_ENDPOINT}/${encodeURIComponent(sid)}/share`
+
+/**
  * Owner-facing BILLING/PLAN read (read-only). GET /app/billing returns the
  * customer's current tier + token allowance, this-cycle usage against it, the
  * plan catalog, whether Stripe is armed (`billingArmed`), and the AppView

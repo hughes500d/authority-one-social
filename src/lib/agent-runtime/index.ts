@@ -72,6 +72,19 @@ export {
   normalizeFeedProfile,
   postFeedSignals,
 } from './feedClient'
+export {
+  downloadGroupExport,
+  fetchGroupThread,
+  fetchOwnerGroups,
+  fetchShareStatus,
+  type MirrorGroup,
+  type MirrorGroupMeta,
+  type MirrorMedia,
+  type MirrorMessage,
+  type MirrorThread,
+  setShare,
+  type ShareStatus,
+} from './groupMirrorClient'
 export {fetchHistory, type HistoryResult} from './historyClient'
 export {type ChatImageToUpload, uploadChatImage} from './imageUploadClient'
 export {
