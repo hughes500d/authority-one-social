@@ -114,6 +114,7 @@ import {AccountSettingsScreen} from '#/screens/Settings/AccountSettings'
 import {ActivityPrivacySettingsScreen} from '#/screens/Settings/ActivityPrivacySettings'
 import {AgentBillingScreen} from '#/screens/Settings/AgentBilling'
 import {AgentUsageScreen} from '#/screens/Settings/AgentUsage'
+import {GroupConversationsScreen} from '#/screens/Settings/GroupConversations'
 import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
@@ -486,6 +487,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => AgentUsageScreen}
         options={{
           title: title(msg`Agent Usage`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="GroupConversations"
+        getComponent={() => GroupConversationsScreen}
+        options={{
+          title: title(msg`Group conversations`),
           requireAuth: true,
         }}
       />
