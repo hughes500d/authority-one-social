@@ -14,12 +14,12 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {useOwnerBillingQuery} from '#/state/queries/agents'
-import {IS_IOS} from '#/env'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {IS_IOS} from '#/env'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AgentBilling'>
 
