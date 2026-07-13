@@ -8352,7 +8352,7 @@ msgstr ""
 msgid "Night"
 msgstr "Night"
 
-#: src/screens/Settings/AgentUsage.tsx:221
+#: src/screens/Settings/AgentUsage.tsx:232
 msgid "No activity in this window"
 msgstr "No activity in this window"
 
@@ -13607,7 +13607,7 @@ msgid "Toggles the sound"
 msgstr ""
 
 #: src/screens/Settings/AgentUsage.tsx:169
-#: src/screens/Settings/AgentUsage.tsx:194
+#: src/screens/Settings/AgentUsage.tsx:205
 msgid "tokens"
 msgstr "tokens"
 
