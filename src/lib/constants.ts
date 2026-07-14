@@ -10,10 +10,11 @@ export const STAGING_SERVICE = 'https://staging.bsky.dev'
 export const BSKY_SERVICE = 'https://bsky.social'
 export const BSKY_SERVICE_DID = 'did:web:bsky.social'
 // Authority One: public (unauthenticated) AppView base URL. Override per-env via
-// EXPO_PUBLIC_APPVIEW_URL (set in Cloudflare Pages to https://appview.authority-one.com).
-// Falls back to Bluesky's public AppView so the local `pnpm web` dev flow is unchanged.
+// EXPO_PUBLIC_APPVIEW_URL. Fail-closed fallback: our own AppView, never
+// Bluesky's - it no longer serves our accounts (2026-07-06 federation
+// lockdown), so falling back there breaks feeds silently.
 export const PUBLIC_BSKY_SERVICE =
-  process.env.EXPO_PUBLIC_APPVIEW_URL || 'https://public.api.bsky.app'
+  process.env.EXPO_PUBLIC_APPVIEW_URL || 'https://appview.authority-one.com'
 // Authority One: self-hosted PDS. Override per-env via EXPO_PUBLIC_PDS_URL.
 export const AUTHORITY_ONE_SERVICE =
   process.env.EXPO_PUBLIC_PDS_URL || 'https://pds.authority-one.com'
@@ -286,12 +287,12 @@ export const urls = {
 }
 
 // Authority One: AppView base URL + DID. Override per-env via EXPO_PUBLIC_APPVIEW_URL
-// / EXPO_PUBLIC_APPVIEW_DID (Cloudflare Pages: https://appview.authority-one.com and
-// its did:web). Fallbacks keep the local `pnpm web` dev flow pointed at Bluesky's AppView.
+// / EXPO_PUBLIC_APPVIEW_DID. Fail-closed fallbacks: our own AppView, never
+// Bluesky's (see PUBLIC_BSKY_SERVICE above).
 export const PUBLIC_APPVIEW =
-  process.env.EXPO_PUBLIC_APPVIEW_URL || 'https://api.bsky.app'
+  process.env.EXPO_PUBLIC_APPVIEW_URL || 'https://appview.authority-one.com'
 export const PUBLIC_APPVIEW_DID =
-  process.env.EXPO_PUBLIC_APPVIEW_DID || 'did:web:api.bsky.app'
+  process.env.EXPO_PUBLIC_APPVIEW_DID || 'did:web:appview.authority-one.com'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'
 
 export const DEV_ENV_APPVIEW = `http://localhost:2584` // always the same

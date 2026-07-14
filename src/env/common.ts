@@ -73,10 +73,16 @@ export const LOG_LEVEL = (process.env.EXPO_PUBLIC_LOG_LEVEL || 'info') as
 export const LOG_DEBUG: string = process.env.EXPO_PUBLIC_LOG_DEBUG || ''
 
 /**
- * The DID of the Bluesky appview to proxy to
+ * The DID of the AppView that authenticated reads are proxied to (the
+ * `atproto-proxy` header). Fail-closed: a build missing the env var must
+ * default to the Authority One AppView, never Bluesky's - since the
+ * 2026-07-06 federation lockdown our accounts are frozen out of
+ * api.bsky.app, so pointing there makes followed accounts silently vanish
+ * from feeds and profiles with no error.
  */
 export const BLUESKY_PROXY_DID: Did =
-  process.env.EXPO_PUBLIC_BLUESKY_PROXY_DID || 'did:web:api.bsky.app'
+  process.env.EXPO_PUBLIC_BLUESKY_PROXY_DID ||
+  'did:web:appview.authority-one.com'
 
 /**
  * The DID of the chat service to proxy to
