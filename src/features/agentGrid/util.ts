@@ -17,6 +17,8 @@ export interface AgentGridEntry {
   /** True when the agent has an active live room (a live thread it is a member of). */
   live: boolean
   paused: boolean
+  /** Rolled-up unread across this agent's in-app group threads (0 = none). */
+  unread: number
 }
 
 /**

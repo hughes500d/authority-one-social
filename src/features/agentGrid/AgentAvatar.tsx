@@ -8,7 +8,8 @@ import {initialsFor, rampFor} from './util'
 /**
  * A circular agent headshot: the real profile photo when one exists, otherwise
  * a deterministic initials tile (same agent, same color everywhere). An agent
- * with an active live room gets a green dot on the avatar's corner.
+ * with an active live room gets a green dot on the avatar's corner; unread
+ * messages roll up into a count bubble on the opposite corner.
  */
 export function AgentAvatar({
   handle,
@@ -16,12 +17,14 @@ export function AgentAvatar({
   avatar,
   size,
   live = false,
+  unreadCount = 0,
 }: {
   handle: string
   displayName?: string
   avatar?: string
   size: number
   live?: boolean
+  unreadCount?: number
 }) {
   const t = useTheme()
   const dotSize = Math.max(10, Math.round(size * 0.24))
@@ -32,6 +35,36 @@ export function AgentAvatar({
       ) : (
         <InitialsAvatar handle={handle} displayName={displayName} size={size} />
       )}
+      {unreadCount > 0 ? (
+        <View
+          testID="agentUnreadBadge"
+          style={[
+            a.absolute,
+            a.rounded_full,
+            a.align_center,
+            a.justify_center,
+            {
+              top: -4,
+              right: -6,
+              minWidth: 18,
+              height: 18,
+              paddingHorizontal: 4,
+              backgroundColor: t.palette.primary_500,
+              borderWidth: 2,
+              borderColor: t.atoms.bg.backgroundColor,
+            },
+          ]}>
+          <Text
+            style={[
+              a.text_xs,
+              a.font_bold,
+              a.leading_tight,
+              {color: t.palette.white},
+            ]}>
+            {unreadCount > 99 ? '99+' : `${unreadCount}`}
+          </Text>
+        </View>
+      ) : null}
       {live ? (
         <View
           testID="agentLiveDot"

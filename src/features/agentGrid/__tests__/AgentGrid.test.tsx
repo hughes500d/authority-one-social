@@ -49,6 +49,7 @@ function entry(overrides: Partial<AgentGridEntry>): AgentGridEntry {
     owned: true,
     live: false,
     paused: false,
+    unread: 0,
     ...overrides,
   }
 }
@@ -86,6 +87,37 @@ describe('AgentAvatar', () => {
       <AgentAvatar handle="opie.pds.authority-one.com" size={60} />,
     )
     expect(r.queryByTestId('agentLiveDot')).toBeNull()
+  })
+
+  it('shows an unread count bubble, capped at 99+', () => {
+    const r = render(
+      <AgentAvatar
+        handle="ada.pds.authority-one.com"
+        size={60}
+        unreadCount={4}
+      />,
+    )
+    expect(r.getByTestId('agentUnreadBadge')).toBeTruthy()
+    expect(r.getByText('4')).toBeTruthy()
+    const capped = render(
+      <AgentAvatar
+        handle="ada.pds.authority-one.com"
+        size={60}
+        unreadCount={250}
+      />,
+    )
+    expect(capped.getByText('99+')).toBeTruthy()
+  })
+
+  it('shows no unread bubble at zero', () => {
+    const r = render(
+      <AgentAvatar
+        handle="ada.pds.authority-one.com"
+        size={60}
+        unreadCount={0}
+      />,
+    )
+    expect(r.queryByTestId('agentUnreadBadge')).toBeNull()
   })
 })
 

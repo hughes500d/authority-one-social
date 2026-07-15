@@ -164,6 +164,7 @@ function AgentTile({
           avatar={entry.avatar}
           size={tileSize}
           live={entry.live}
+          unreadCount={entry.unread}
         />
       </View>
       {!avatarOnly ? (

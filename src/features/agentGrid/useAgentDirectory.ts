@@ -1,6 +1,7 @@
 import {isAgentHandle} from '#/lib/agent-runtime'
 import {
   useAgentGroupThreadsQuery,
+  useAgentUnreadCounts,
   useLiveAgentKeys,
 } from '#/state/queries/agent-threads'
 import {useOwnerAgentsQuery} from '#/state/queries/agents'
@@ -46,10 +47,14 @@ export function useAgentDirectory(): {
     currentAccount?.did,
   )
   const liveKeys = useLiveAgentKeys()
+  const unreadCounts = useAgentUnreadCounts()
 
   const isLive = (handle: string, did?: string) =>
     liveKeys.has(handle.toLowerCase()) ||
     (!!did && liveKeys.has(did.toLowerCase()))
+  const unreadFor = (handle: string, did?: string) =>
+    (unreadCounts.get(handle.toLowerCase()) ?? 0) +
+    (did ? (unreadCounts.get(did.toLowerCase()) ?? 0) : 0)
 
   const owned: AgentGridEntry[] = ownedAgents.map(agent => {
     const profile = ownedProfiles?.profiles.find(
@@ -67,6 +72,7 @@ export function useAgentDirectory(): {
       owned: true,
       live: isLive(agent.handle, did),
       paused: agent.paused === true,
+      unread: unreadFor(agent.handle, did),
     }
   })
 
@@ -94,6 +100,7 @@ export function useAgentDirectory(): {
       owned: false,
       live: isLive(profile.handle, profile.did),
       paused: false,
+      unread: unreadFor(profile.handle, profile.did),
     })
   }
 

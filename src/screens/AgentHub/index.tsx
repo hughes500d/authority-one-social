@@ -4,7 +4,7 @@ import {type AppBskyActorDefs} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
-import {type OwnerAgent} from '#/lib/agent-runtime'
+import {type MirrorGroup, type OwnerAgent} from '#/lib/agent-runtime'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {
@@ -23,10 +23,12 @@ import {
   useOwnerAgentsQuery,
   usePauseOwnerAgentMutation,
 } from '#/state/queries/agents'
+import {useMirrorGroupsQuery} from '#/state/queries/mirror-groups'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {EmptyState} from '#/view/com/util/EmptyState'
+import {channelBadge} from '#/screens/AgentChat/channelBadge'
 import {AgentProfileDialog} from '#/screens/Settings/PersonaSettings/AgentProfileDialog'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -46,13 +48,13 @@ import {LiveBadge} from '#/features/agentGrid/LiveBadge'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AgentHub'>
 
-type HubTab = 'groups' | 'posts' | 'profile' | 'settings'
+type HubTab = 'messages' | 'posts' | 'profile' | 'settings'
 
 /**
  * The per-agent hub: ONE place per agent with a top tab strip
- * [Groups | Posts | Profile | Settings].
+ * [Messages | Posts | Profile | Settings].
  *
- * - Groups (default): the WhatsApp-style list of this agent's conversations —
+ * - Messages (default): the WhatsApp-style list of this agent's conversations —
  *   the pinned 1:1 chat plus every group thread the agent is a member of, with
  *   any live drop-in room pinned to the top.
  * - Posts: the agent's author feed (existing feed componentry).
@@ -81,7 +83,7 @@ function AgentHubInner({agentRef}: {agentRef: string}) {
   const {data: profile, isLoading: profileLoading} = useProfileQuery({
     did: agent?.did ?? agent?.handle ?? agentRef,
   })
-  const [tab, setTab] = useState<HubTab>('groups')
+  const [tab, setTab] = useState<HubTab>('messages')
 
   if ((rosterLoading || profileLoading) && !agent && !profile) {
     return (
@@ -168,8 +170,8 @@ function AgentHubInner({agentRef}: {agentRef: string}) {
       <HubTabBar tab={tab} onSelect={setTab} showSettings={owned} />
 
       <View style={[a.flex_1]}>
-        {tab === 'groups' ? (
-          <GroupsTab
+        {tab === 'messages' ? (
+          <MessagesTab
             identity={identity}
             displayName={displayName}
             avatar={avatar}
@@ -237,7 +239,7 @@ function HubTabBar({
   const t = useTheme()
   const {t: l} = useLingui()
   const tabs: {key: HubTab; label: string}[] = [
-    {key: 'groups', label: l`Groups`},
+    {key: 'messages', label: l`Messages`},
     {key: 'posts', label: l`Posts`},
     {key: 'profile', label: l`Profile`},
   ]
@@ -286,14 +288,14 @@ function HubTabBar({
 }
 
 /**
- * The Groups tab (default): this agent's conversations, WhatsApp-style.
+ * The Messages tab (default): this agent's conversations, WhatsApp-style.
  * A live drop-in room is pinned to the top (threads arrive live-first from the
  * client sort). For owned agents the 1:1 chat rides as a pinned row above the
  * groups; for non-owned agents the public Talk-to entry takes its place.
  * Group membership resolves from each thread's roster — `Thread` rows carry no
  * agent identity of their own.
  */
-function GroupsTab({
+function MessagesTab({
   identity,
   displayName,
   avatar,
@@ -309,6 +311,13 @@ function GroupsTab({
   const t = useTheme()
   const navigation = useNavigation<NavigationProp>()
   const {groups, isLoading, unavailable} = useAgentGroupThreadsQuery(identity)
+  // Read-only mirror of the agent's SMS/MMS threads (owner-scoped endpoint, so
+  // only queried for owned agents). WhatsApp/iMessage threads live in the
+  // runtime but have no list endpoint yet — see the Messages unification plan.
+  const {data: mirrorGroups} = useMirrorGroupsQuery(identity.handle, {
+    enabled: owned,
+  })
+  const smsGroups = owned ? (mirrorGroups ?? []) : []
 
   return (
     <View style={[a.flex_1]}>
@@ -331,16 +340,16 @@ function GroupsTab({
         <View style={[a.py_lg, a.align_center]}>
           <ActivityIndicator />
         </View>
-      ) : groups.length === 0 ? (
+      ) : groups.length === 0 && smsGroups.length === 0 ? (
         <View style={[a.px_lg, a.py_md]}>
           <Text style={[a.text_sm, t.atoms.text_contrast_low]}>
             {/* Plain literals: interpolated custom strings break under the
                 uncompiled catalog. */}
             {unavailable
-              ? 'Groups are unavailable right now.'
+              ? 'Messages are unavailable right now.'
               : owned
-                ? `No groups with ${displayName} yet. Start one from Chats.`
-                : `No shared groups with ${displayName} yet.`}
+                ? `No messages with ${displayName} yet. Start a group from Chats.`
+                : `No shared messages with ${displayName} yet.`}
           </Text>
         </View>
       ) : (
@@ -361,11 +370,103 @@ function GroupsTab({
           />
         ))
       )}
+
+      {smsGroups.length > 0 ? (
+        <>
+          <View style={[a.px_lg, a.pt_md, a.pb_xs]}>
+            <Text
+              style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
+              {/* Plain literal (custom string). */}
+              Text channels — read-only mirror
+            </Text>
+          </View>
+          {smsGroups.map(group => (
+            <MirrorGroupRow
+              key={group.conversationSid}
+              group={group}
+              onPress={() =>
+                navigation.navigate('MessagesSmsGroupThread', {
+                  sid: group.conversationSid,
+                  name: group.title ?? undefined,
+                })
+              }
+            />
+          ))}
+        </>
+      ) : null}
     </View>
   )
 }
 
-/** The pinned 1:1 conversation with an owned agent — always first in Groups. */
+/**
+ * One mirrored SMS/MMS thread row: the agent's live Twilio group, reflected
+ * read-only (display names only, never phone numbers). The list endpoint
+ * carries no last message or timestamp — the unified runtime conversations
+ * endpoint owns that enrichment when it lands.
+ */
+function MirrorGroupRow({
+  group,
+  onPress,
+}: {
+  group: MirrorGroup
+  onPress: () => void
+}) {
+  const t = useTheme()
+  const badge = channelBadge('sms')
+  const title = group.title || group.conversationSid
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
+      accessibilityHint="Opens a read-only mirror of this text thread"
+      onPress={onPress}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_md,
+        a.px_lg,
+        a.py_md,
+        a.border_b,
+        t.atoms.border_contrast_low,
+      ]}>
+      <View
+        style={[
+          a.rounded_full,
+          a.align_center,
+          a.justify_center,
+          {
+            width: 46,
+            height: 46,
+            backgroundColor: t.atoms.bg_contrast_25.backgroundColor,
+          },
+        ]}>
+        <MessageIcon size="lg" fill={t.atoms.text_contrast_medium.color} />
+      </View>
+      <View style={[a.flex_1]}>
+        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+          <Text
+            emoji
+            style={[a.flex_1, a.text_md, a.font_bold, t.atoms.text]}
+            numberOfLines={1}>
+            {title}
+          </Text>
+          {badge ? (
+            <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+              {badge.label}
+            </Text>
+          ) : null}
+        </View>
+        <Text
+          style={[a.text_sm, t.atoms.text_contrast_medium]}
+          numberOfLines={1}>
+          {`${group.memberCount} ${group.memberCount === 1 ? 'member' : 'members'}${group.openJoin ? ' · open' : ''}`}
+        </Text>
+      </View>
+    </Pressable>
+  )
+}
+
+/** The pinned 1:1 conversation with an owned agent — always first in Messages. */
 function DirectChatRow({
   identity,
   displayName,
