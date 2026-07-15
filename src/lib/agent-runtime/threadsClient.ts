@@ -40,6 +40,14 @@ export interface Thread {
    * thread is an invite the user can accept/decline; 'owner'/'admin' gate management.
    */
   membership?: 'owner' | 'admin' | 'member' | 'pending'
+  /**
+   * The runtime marks a thread as a LIVE drop-in room. Display-only for now — the
+   * client pins live threads to the top of every list and shows a live indicator.
+   * The runtime does not emit this yet (live-session backend is a separate build),
+   * so today it is always undefined; the wiring is here so the UI lights up the
+   * moment the field ships.
+   */
+  live?: boolean
 }
 
 export interface ThreadsResult {
@@ -129,10 +137,11 @@ export function normalizeThread(raw: unknown): Thread | null {
       membership === 'pending'
         ? membership
         : undefined,
+    live: r.live === true ? true : undefined,
   }
 }
 
-/** Newest-first, with pending invites surfaced at the top. */
+/** Live rooms pinned first, then pending invites, then newest-first. */
 export function normalizeThreads(json: unknown): Thread[] {
   const rows = (json as {threads?: unknown})?.threads
   if (!Array.isArray(rows)) return []
@@ -140,6 +149,9 @@ export function normalizeThreads(json: unknown): Thread[] {
     .map(normalizeThread)
     .filter((t): t is Thread => t !== null)
   return threads.sort((a, b) => {
+    const aLive = a.live === true ? 1 : 0
+    const bLive = b.live === true ? 1 : 0
+    if (aLive !== bLive) return bLive - aLive
     const aPending = a.membership === 'pending' ? 1 : 0
     const bPending = b.membership === 'pending' ? 1 : 0
     if (aPending !== bPending) return bPending - aPending
@@ -246,6 +258,23 @@ export function isCreatorIdentity(
   const did = identity.did?.trim().toLowerCase()
   const handle = identity.handle?.trim().toLowerCase()
   return c === did || c === handle
+}
+
+/**
+ * Lowercased identity keys (member id + handle) of every AGENT member in a roster.
+ * A thread "belongs to" an agent when the agent's handle or DID appears here — the
+ * runtime stores ONE identifier per member (did OR handle), so both are collected.
+ * PURE + tested.
+ */
+export function rosterAgentKeys(roster: ThreadRoster | undefined): string[] {
+  if (!roster) return []
+  const keys: string[] = []
+  for (const m of roster.members) {
+    if (m.kind !== 'agent' && m.isAgent !== true) continue
+    if (m.id) keys.push(m.id.trim().toLowerCase())
+    if (m.handle) keys.push(m.handle.trim().toLowerCase())
+  }
+  return keys
 }
 
 /**

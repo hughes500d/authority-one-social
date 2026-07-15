@@ -16,7 +16,6 @@ import {
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {isInvalidHandle, sanitizeHandle} from '#/lib/strings/handles'
 import {emitSoftReset} from '#/state/events'
-import {useOwnerAgentsQuery} from '#/state/queries/agents'
 import {useFetchHandle} from '#/state/queries/handle'
 import {useUnreadMessageCount} from '#/state/queries/messages/list-conversations'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
@@ -72,7 +71,6 @@ import {
   Message_Stroke2_Corner0_Rounded as MessageIcon,
   Message_Stroke2_Corner0_Rounded_Filled as MessageFilledIcon,
 } from '#/components/icons/Message'
-import {Microphone_Stroke2_Corner0_Rounded as MicrophoneIcon} from '#/components/icons/Microphone'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {
   SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
@@ -89,6 +87,8 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {AgentGrid} from '#/features/agentGrid/AgentGrid'
+import {useAgentDirectory} from '#/features/agentGrid/useAgentDirectory'
 import {useActorStatus} from '#/features/liveNow'
 import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
@@ -387,31 +387,26 @@ function SwitchMenuItem({
 }
 
 /**
- * YOUR AGENTS roster in the desktop left nav — one item per owned agent
- * (label = runtime display name / handle; plain strings, never the Lingui
- * catalog), each linking to that agent's AgentHub. Replaces the singular
- * "Talk to your agent" misdirect. Renders nothing when the roster is empty
- * or unavailable — the Chats item directly below leads to the roster screen.
+ * YOUR AGENTS in the desktop left nav — the headshot grid ("Your agents" +
+ * "Chatting with" sections; plain-literal labels, never the Lingui catalog),
+ * each tile linking to that agent's AgentHub. In the minimal rail it renders
+ * as an avatar-only column. Renders nothing when there are no agents at all —
+ * the Chats item directly below leads to the roster screen.
  */
 function YourAgentsNavItems({minimal}: {minimal: boolean}) {
-  const {data} = useOwnerAgentsQuery()
-  const agents = data?.agents ?? []
-  if (agents.length === 0) return null
+  const navigation = useNavigation<NavigationProp>()
+  const {isEmpty} = useAgentDirectory()
+  if (isEmpty) return null
   return (
-    <>
-      {agents.map(agent => (
-        <NavItem
-          key={agent.handle}
-          label={agent.displayName || agent.handle}
-          href={`/agents/${agent.handle}`}
-          minimal={minimal}
-          icons={{
-            inactive: MicrophoneIcon,
-            active: MicrophoneIcon,
-          }}
-        />
-      ))}
-    </>
+    <View style={[a.py_sm, !minimal && a.px_xs]}>
+      <AgentGrid
+        tileSize={minimal ? 36 : 52}
+        avatarOnly={minimal}
+        onPressAgent={entry =>
+          navigation.navigate('AgentHub', {agent: entry.handle})
+        }
+      />
+    </View>
   )
 }
 

@@ -1,16 +1,23 @@
 import {useState} from 'react'
 import {ActivityIndicator, Pressable, View} from 'react-native'
+import {type AppBskyActorDefs} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
 import {type OwnerAgent} from '#/lib/agent-runtime'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
+import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
   type NavigationProp,
 } from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {useProfileShadow} from '#/state/cache/profile-shadow'
+import {
+  type AgentIdentity,
+  useAgentGroupThreadsQuery,
+} from '#/state/queries/agent-threads'
 import {
   useOwnedAgent,
   useOwnerAgentsQuery,
@@ -20,33 +27,41 @@ import {useProfileQuery} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {EmptyState} from '#/view/com/util/EmptyState'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
-import {AgentChatEmbedded} from '#/screens/AgentChat'
 import {AgentProfileDialog} from '#/screens/Settings/PersonaSettings/AgentProfileDialog'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronIcon} from '#/components/icons/Chevron'
 import {EditBig_Stroke1_Corner0_Rounded as EditIcon} from '#/components/icons/EditBig'
+import {Message_Stroke2_Corner0_Rounded as MessageIcon} from '#/components/icons/Message'
 import {Pause_Stroke2_Corner0_Rounded as PauseIcon} from '#/components/icons/Pause'
+import {PersonGroup_Stroke2_Corner2_Rounded as GroupIcon} from '#/components/icons/Person'
 import {Play_Stroke2_Corner0_Rounded as PlayIcon} from '#/components/icons/Play'
 import * as Layout from '#/components/Layout'
+import {TalkToAgentButton} from '#/components/TalkToAgent/TalkToAgentButton'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {AgentAvatar} from '#/features/agentGrid/AgentAvatar'
+import {LiveBadge} from '#/features/agentGrid/LiveBadge'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AgentHub'>
 
-type HubTab = 'chat' | 'posts' | 'profile' | 'settings'
+type HubTab = 'groups' | 'posts' | 'profile' | 'settings'
 
 /**
- * The per-agent hub: ONE place per owned agent combining the conversational
- * plane (Chat tab — the existing 1:1 chat, keyed to THIS agent) and the
- * direct-manipulation plane (Posts / Profile / Settings — deterministic
- * owner controls through ownership-scoped runtime endpoints, never the
- * agent's LLM). The viewer stays signed in as themselves — the header chip
- * makes the delegation model legible. Management renders only when the
- * roster confirms the viewer owns this agent (re-checked here because deep
- * links can land anyone on /agents/:agent).
+ * The per-agent hub: ONE place per agent with a top tab strip
+ * [Groups | Posts | Profile | Settings].
+ *
+ * - Groups (default): the WhatsApp-style list of this agent's conversations —
+ *   the pinned 1:1 chat plus every group thread the agent is a member of, with
+ *   any live drop-in room pinned to the top.
+ * - Posts: the agent's author feed (existing feed componentry).
+ * - Profile: the agent's public identity.
+ * - Settings: owner-only management (hidden for agents the viewer doesn't own).
+ *
+ * Unlike the previous owner-only hub, the screen now renders for ANY agent —
+ * ownership (the /app/agents roster) gates the management surfaces (Settings
+ * tab, Post-as, profile editing, the delegation chip), not the screen itself.
  */
 export function AgentHubScreen({route}: Props) {
   const agentRef = route.params.agent
@@ -57,61 +72,61 @@ function AgentHubInner({agentRef}: {agentRef: string}) {
   const t = useTheme()
   const {t: l} = useLingui()
   const {currentAccount} = useSession()
-  const {data: roster, isLoading: rosterLoading} = useOwnerAgentsQuery()
+  const {isLoading: rosterLoading} = useOwnerAgentsQuery()
   const agent = useOwnedAgent(agentRef)
+  const owned = !!agent
   // Enrich from the agent's atproto profile: avatar + display name + the
-  // authoritative DID (runtime rows may omit `did`).
-  const {data: profile} = useProfileQuery({
+  // authoritative DID (runtime rows may omit `did`). For non-owned agents the
+  // profile is the ONLY identity source.
+  const {data: profile, isLoading: profileLoading} = useProfileQuery({
     did: agent?.did ?? agent?.handle ?? agentRef,
   })
-  const [tab, setTab] = useState<HubTab>('chat')
+  const [tab, setTab] = useState<HubTab>('groups')
 
-  // OWNERSHIP GUARD (deep links): the hub is management UI — render it only
-  // once the roster confirms this agent belongs to the viewer.
-  if (rosterLoading) {
+  if ((rosterLoading || profileLoading) && !agent && !profile) {
     return (
-      <HubShell title={l`Your agent`}>
+      <HubShell title={l`Agent`}>
         <View style={[a.flex_1, a.align_center, a.justify_center]}>
           <ActivityIndicator />
         </View>
       </HubShell>
     )
   }
-  if (!agent) {
+
+  const handle = agent?.handle ?? profile?.handle
+  if (!handle) {
     return (
-      <HubShell title={l`Your agent`}>
+      <HubShell title={l`Agent`}>
         <View style={[a.px_lg, a.py_2xl, a.gap_sm]}>
           <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
-            {roster === undefined || roster.signedOut ? (
-              <Trans>Your agents are unavailable right now</Trans>
-            ) : (
-              <Trans>This agent isn’t linked to your account</Trans>
-            )}
+            <Trans>This agent is unavailable right now</Trans>
           </Text>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-            <Trans>
-              Only an agent’s owner can chat with and manage it here.
-            </Trans>
+            <Trans>Check the address, or try again in a moment.</Trans>
           </Text>
         </View>
       </HubShell>
     )
   }
 
-  const displayName = profile?.displayName || agent.displayName || agent.handle
+  const did = profile?.did ?? agent?.did
+  const identity: AgentIdentity = {handle, did}
+  const displayName = profile?.displayName || agent?.displayName || handle
+  const avatar = profile?.avatar ?? agent?.avatar
   const ownerLabel = currentAccount?.handle
     ? sanitizeHandle(currentAccount.handle, '@')
     : 'you'
 
   return (
     <HubShell title={displayName}>
-      {/* Hub header: who this agent is + the delegation chip. */}
+      {/* Hub header: who this agent is (+ the delegation chip when owned). */}
       <View style={[a.px_lg, a.pt_sm, a.gap_sm]}>
         <View style={[a.flex_row, a.align_center, a.gap_md]}>
-          <UserAvatar
-            avatar={profile?.avatar ?? agent.avatar}
+          <AgentAvatar
+            handle={handle}
+            displayName={displayName}
+            avatar={avatar}
             size={48}
-            type="user"
           />
           <View style={[a.flex_1]}>
             <View style={[a.flex_row, a.align_center, a.gap_sm]}>
@@ -121,50 +136,64 @@ function AgentHubInner({agentRef}: {agentRef: string}) {
                 numberOfLines={1}>
                 {displayName}
               </Text>
-              <HubStatusBadge agent={agent} />
+              {agent ? <HubStatusBadge agent={agent} /> : null}
             </View>
             <Text
               style={[a.text_sm, t.atoms.text_contrast_medium]}
               numberOfLines={1}>
-              {sanitizeHandle(agent.handle, '@')}
+              {sanitizeHandle(handle, '@')}
             </Text>
           </View>
         </View>
-        {/* Persistent delegation chip: managing, not signed in as. */}
-        <View
-          style={[
-            a.self_start,
-            a.rounded_full,
-            a.px_md,
-            a.py_xs,
-            t.atoms.bg_contrast_25,
-          ]}>
-          <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
-            {/* Plain literal: interpolated custom strings render their raw ICU
-                placeholders under the uncompiled catalog (the "Managing
-                {displayName}" bug Elliott hit live). */}
-            {`Managing ${displayName} — you are still ${ownerLabel}`}
-          </Text>
-        </View>
+        {owned ? (
+          // Persistent delegation chip: managing, not signed in as.
+          <View
+            style={[
+              a.self_start,
+              a.rounded_full,
+              a.px_md,
+              a.py_xs,
+              t.atoms.bg_contrast_25,
+            ]}>
+            <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+              {/* Plain literal: interpolated custom strings render their raw ICU
+                  placeholders under the uncompiled catalog (the "Managing
+                  {displayName}" bug Elliott hit live). */}
+              {`Managing ${displayName} — you are still ${ownerLabel}`}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      <HubTabBar tab={tab} onSelect={setTab} />
+      <HubTabBar tab={tab} onSelect={setTab} showSettings={owned} />
 
       <View style={[a.flex_1]}>
-        {tab === 'chat' ? (
-          <AgentChatEmbedded agent={agent.handle} />
+        {tab === 'groups' ? (
+          <GroupsTab
+            identity={identity}
+            displayName={displayName}
+            avatar={avatar}
+            owned={owned}
+            profile={profile}
+          />
         ) : tab === 'posts' ? (
-          <PostsTab agent={agent} did={profile?.did ?? agent.did} />
-        ) : tab === 'profile' ? (
-          <ProfileTab
+          <PostsTab
             agent={agent}
             displayName={displayName}
-            avatar={profile?.avatar ?? agent.avatar}
+            did={did}
+            owned={owned}
+          />
+        ) : tab === 'profile' ? (
+          <ProfileTab
+            handle={handle}
+            owned={owned}
+            displayName={displayName}
+            avatar={avatar}
             description={profile?.description}
           />
-        ) : (
+        ) : agent ? (
           <SettingsTab agent={agent} displayName={displayName} />
-        )}
+        ) : null}
       </View>
     </HubShell>
   )
@@ -190,7 +219,7 @@ function HubShell({
           are position:fixed and screens are expected to self-center via
           Layout.Center/Content (Header.Outer does its own). Without this the
           hub header/tabs/content span the full window and paint under both
-          navs. flex_1 so the Chat tab's composer can pin to the bottom. */}
+          navs. flex_1 so tab content can fill to the bottom. */}
       <Layout.Center style={[a.flex_1]}>{children}</Layout.Center>
     </Layout.Screen>
   )
@@ -199,18 +228,22 @@ function HubShell({
 function HubTabBar({
   tab,
   onSelect,
+  showSettings,
 }: {
   tab: HubTab
   onSelect: (tab: HubTab) => void
+  showSettings: boolean
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
   const tabs: {key: HubTab; label: string}[] = [
-    {key: 'chat', label: l`Chat`},
+    {key: 'groups', label: l`Groups`},
     {key: 'posts', label: l`Posts`},
     {key: 'profile', label: l`Profile`},
-    {key: 'settings', label: l`Settings`},
   ]
+  if (showSettings) {
+    tabs.push({key: 'settings', label: l`Settings`})
+  }
   return (
     <View
       style={[a.flex_row, a.mt_sm, a.border_b, t.atoms.border_contrast_low]}>
@@ -253,16 +286,258 @@ function HubTabBar({
 }
 
 /**
+ * The Groups tab (default): this agent's conversations, WhatsApp-style.
+ * A live drop-in room is pinned to the top (threads arrive live-first from the
+ * client sort). For owned agents the 1:1 chat rides as a pinned row above the
+ * groups; for non-owned agents the public Talk-to entry takes its place.
+ * Group membership resolves from each thread's roster — `Thread` rows carry no
+ * agent identity of their own.
+ */
+function GroupsTab({
+  identity,
+  displayName,
+  avatar,
+  owned,
+  profile,
+}: {
+  identity: AgentIdentity
+  displayName: string
+  avatar?: string
+  owned: boolean
+  profile?: AppBskyActorDefs.ProfileViewDetailed
+}) {
+  const t = useTheme()
+  const navigation = useNavigation<NavigationProp>()
+  const {groups, isLoading, unavailable} = useAgentGroupThreadsQuery(identity)
+
+  return (
+    <View style={[a.flex_1]}>
+      {owned ? (
+        <DirectChatRow
+          identity={identity}
+          displayName={displayName}
+          avatar={avatar}
+          onPress={() =>
+            navigation.navigate('AgentChat', {agent: identity.handle})
+          }
+        />
+      ) : profile ? (
+        <View style={[a.px_lg, a.py_md, a.flex_row]}>
+          <PublicTalkEntry profile={profile} />
+        </View>
+      ) : null}
+
+      {isLoading && groups.length === 0 ? (
+        <View style={[a.py_lg, a.align_center]}>
+          <ActivityIndicator />
+        </View>
+      ) : groups.length === 0 ? (
+        <View style={[a.px_lg, a.py_md]}>
+          <Text style={[a.text_sm, t.atoms.text_contrast_low]}>
+            {/* Plain literals: interpolated custom strings break under the
+                uncompiled catalog. */}
+            {unavailable
+              ? 'Groups are unavailable right now.'
+              : owned
+                ? `No groups with ${displayName} yet. Start one from Chats.`
+                : `No shared groups with ${displayName} yet.`}
+          </Text>
+        </View>
+      ) : (
+        groups.map(group => (
+          <GroupRow
+            key={group.id}
+            title={group.title}
+            lastMessage={group.lastMessage}
+            updatedAt={group.updatedAt}
+            unreadCount={group.unreadCount}
+            live={group.live === true}
+            onPress={() =>
+              navigation.navigate('AgentChat', {
+                threadId: group.id,
+                threadTitle: group.title,
+              })
+            }
+          />
+        ))
+      )}
+    </View>
+  )
+}
+
+/** The pinned 1:1 conversation with an owned agent — always first in Groups. */
+function DirectChatRow({
+  identity,
+  displayName,
+  avatar,
+  onPress,
+}: {
+  identity: AgentIdentity
+  displayName: string
+  avatar?: string
+  onPress: () => void
+}) {
+  const t = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Chat with ${displayName}`}
+      accessibilityHint="Opens your direct conversation with this agent"
+      onPress={onPress}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_md,
+        a.px_lg,
+        a.py_md,
+        a.border_b,
+        t.atoms.border_contrast_low,
+      ]}>
+      <AgentAvatar
+        handle={identity.handle}
+        displayName={displayName}
+        avatar={avatar}
+        size={46}
+      />
+      <View style={[a.flex_1]}>
+        <Text
+          emoji
+          style={[a.text_md, a.font_bold, t.atoms.text]}
+          numberOfLines={1}>
+          {`Chat with ${displayName}`}
+        </Text>
+        <Text
+          style={[a.text_sm, t.atoms.text_contrast_medium]}
+          numberOfLines={1}>
+          <Trans>Your direct conversation</Trans>
+        </Text>
+      </View>
+      <MessageIcon size="md" fill={t.atoms.text_contrast_low.color} />
+    </Pressable>
+  )
+}
+
+/** Public Talk-to entry for agents the viewer doesn't own (metered visitor chat). */
+function PublicTalkEntry({
+  profile,
+}: {
+  profile: AppBskyActorDefs.ProfileViewDetailed
+}) {
+  const shadowed = useProfileShadow(profile)
+  return <TalkToAgentButton profile={shadowed} />
+}
+
+/** One group conversation row: avatar circle, name, preview, time / live pin. */
+function GroupRow({
+  title,
+  lastMessage,
+  updatedAt,
+  unreadCount,
+  live,
+  onPress,
+}: {
+  title: string
+  lastMessage?: string
+  updatedAt: number
+  unreadCount: number
+  live: boolean
+  onPress: () => void
+}) {
+  const t = useTheme()
+  const timeAgo = useGetTimeAgo()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
+      accessibilityHint=""
+      onPress={onPress}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_md,
+        a.px_lg,
+        a.py_md,
+        a.border_b,
+        t.atoms.border_contrast_low,
+      ]}>
+      <View
+        style={[
+          a.rounded_full,
+          a.align_center,
+          a.justify_center,
+          {
+            width: 46,
+            height: 46,
+            backgroundColor: live
+              ? t.palette.positive_50
+              : t.atoms.bg_contrast_25.backgroundColor,
+          },
+        ]}>
+        <GroupIcon
+          size="lg"
+          fill={
+            live ? t.palette.positive_600 : t.atoms.text_contrast_medium.color
+          }
+        />
+      </View>
+      <View style={[a.flex_1]}>
+        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+          <Text
+            emoji
+            style={[a.flex_1, a.text_md, a.font_bold, t.atoms.text]}
+            numberOfLines={1}>
+            {title}
+          </Text>
+          {live ? (
+            <LiveBadge />
+          ) : updatedAt > 0 ? (
+            <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+              {timeAgo(updatedAt, new Date())}
+            </Text>
+          ) : null}
+        </View>
+        <Text
+          style={[a.text_sm, t.atoms.text_contrast_medium]}
+          numberOfLines={1}>
+          {live ? 'Open — drop in' : (lastMessage ?? ' ')}
+        </Text>
+      </View>
+      {unreadCount > 0 ? (
+        <View
+          style={[
+            a.rounded_full,
+            a.px_sm,
+            {paddingVertical: 2, backgroundColor: t.palette.primary_500},
+          ]}>
+          <Text style={[a.text_xs, a.font_bold, {color: t.palette.white}]}>
+            {unreadCount > 99 ? '99+' : `${unreadCount}`}
+          </Text>
+        </View>
+      ) : null}
+    </Pressable>
+  )
+}
+
+/**
  * The agent's published posts — the existing author-feed componentry pointed at
  * the agent's DID (the AppView serves any DID's feed; reads need nothing new).
  * Owner controls ride the normal post "•••" menu (ownedAgentDids check), and
- * "Post as <Agent>" opens the composer in postAs mode — verbatim, via the
- * ownership-scoped runtime endpoint, no LLM.
+ * "Post as <Agent>" (owners only) opens the composer in postAs mode — verbatim,
+ * via the ownership-scoped runtime endpoint, no LLM.
  */
-function PostsTab({agent, did}: {agent: OwnerAgent; did?: string}) {
+function PostsTab({
+  agent,
+  displayName,
+  did,
+  owned,
+}: {
+  agent?: OwnerAgent
+  displayName: string
+  did?: string
+  owned: boolean
+}) {
   const t = useTheme()
   const {openComposer} = useOpenComposer()
-  const name = agent.displayName || agent.handle
 
   if (!did) {
     return (
@@ -276,29 +551,31 @@ function PostsTab({agent, did}: {agent: OwnerAgent; did?: string}) {
 
   return (
     <View style={[a.flex_1]}>
-      <View style={[a.px_lg, a.py_sm, a.flex_row]}>
-        {/* Plain literals: interpolated custom strings break (raw ICU
-            placeholders) under the uncompiled catalog. */}
-        <Button
-          label={`Post as ${name}`}
-          size="small"
-          variant="solid"
-          color="primary"
-          onPress={() =>
-            openComposer({
-              postAs: {
-                did,
-                handle: agent.handle,
-                displayName: agent.displayName,
-                avatar: agent.avatar,
-              },
-              logContext: 'Other',
-            })
-          }>
-          <ButtonIcon icon={EditIcon} />
-          <ButtonText>{`Post as ${name}`}</ButtonText>
-        </Button>
-      </View>
+      {owned && agent ? (
+        <View style={[a.px_lg, a.py_sm, a.flex_row]}>
+          {/* Plain literals: interpolated custom strings break (raw ICU
+              placeholders) under the uncompiled catalog. */}
+          <Button
+            label={`Post as ${displayName}`}
+            size="small"
+            variant="solid"
+            color="primary"
+            onPress={() =>
+              openComposer({
+                postAs: {
+                  did,
+                  handle: agent.handle,
+                  displayName: agent.displayName,
+                  avatar: agent.avatar,
+                },
+                logContext: 'Other',
+              })
+            }>
+            <ButtonIcon icon={EditIcon} />
+            <ButtonText>{`Post as ${displayName}`}</ButtonText>
+          </Button>
+        </View>
+      ) : null}
       <View style={[a.flex_1]}>
         <PostFeed
           testID="agentHubPostsFeed"
@@ -307,7 +584,11 @@ function PostsTab({agent, did}: {agent: OwnerAgent; did?: string}) {
           renderEmptyState={() => (
             <EmptyState
               icon={EditIcon}
-              message={`No posts yet. Post as ${name} to get started.`}
+              message={
+                owned
+                  ? `No posts yet. Post as ${displayName} to get started.`
+                  : `${displayName} hasn’t posted yet.`
+              }
             />
           )}
         />
@@ -317,33 +598,42 @@ function PostsTab({agent, did}: {agent: OwnerAgent; did?: string}) {
 }
 
 /**
- * The agent's public identity, with the existing profile editor (display name,
- * bio, avatar, banner -> the agent's PDS profile record via /app/agents/profile).
+ * The agent's public identity. Owners get the existing profile editor (display
+ * name, bio, avatar, banner -> the agent's PDS profile record via
+ * /app/agents/profile); everyone gets a link to the full profile screen.
  */
 function ProfileTab({
-  agent,
+  handle,
+  owned,
   displayName,
   avatar,
   description,
 }: {
-  agent: OwnerAgent
+  handle: string
+  owned: boolean
   displayName: string
   avatar?: string
   description?: string
 }) {
   const t = useTheme()
+  const navigation = useNavigation<NavigationProp>()
   const editControl = Dialog.useDialogControl()
 
   return (
     <View style={[a.px_lg, a.py_lg, a.gap_lg]}>
       <View style={[a.flex_row, a.align_center, a.gap_md]}>
-        <UserAvatar avatar={avatar} size={64} type="user" />
+        <AgentAvatar
+          handle={handle}
+          displayName={displayName}
+          avatar={avatar}
+          size={64}
+        />
         <View style={[a.flex_1]}>
           <Text emoji style={[a.text_lg, a.font_bold, t.atoms.text]}>
             {displayName}
           </Text>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-            {sanitizeHandle(agent.handle, '@')}
+            {sanitizeHandle(handle, '@')}
           </Text>
         </View>
       </View>
@@ -357,17 +647,32 @@ function ProfileTab({
         </Text>
       )}
       <Button
-        label={`Edit ${displayName}’s profile`}
+        label={`View ${displayName}’s full profile`}
         size="large"
         variant="solid"
-        color="primary"
-        onPress={() => editControl.open()}>
-        <ButtonIcon icon={EditIcon} />
+        color="secondary"
+        onPress={() => navigation.navigate('Profile', {name: handle})}>
         <ButtonText>
-          <Trans>Edit profile</Trans>
+          <Trans>View full profile</Trans>
         </ButtonText>
+        <ButtonIcon icon={ChevronIcon} />
       </Button>
-      <AgentProfileDialog control={editControl} agent={agent.handle} />
+      {owned ? (
+        <>
+          <Button
+            label={`Edit ${displayName}’s profile`}
+            size="large"
+            variant="solid"
+            color="primary"
+            onPress={() => editControl.open()}>
+            <ButtonIcon icon={EditIcon} />
+            <ButtonText>
+              <Trans>Edit profile</Trans>
+            </ButtonText>
+          </Button>
+          <AgentProfileDialog control={editControl} agent={handle} />
+        </>
+      ) : null}
     </View>
   )
 }

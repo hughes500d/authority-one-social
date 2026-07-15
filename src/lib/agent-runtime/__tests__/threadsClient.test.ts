@@ -19,6 +19,7 @@ import {
   pickThreadId,
   removeThreadMember,
   renameThread,
+  rosterAgentKeys,
   sendToThread,
 } from '../threadsClient'
 
@@ -69,6 +70,60 @@ describe('normalizeThread / normalizeThreads (pure)', () => {
       ],
     })
     expect(out.map(t => t.id)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('only a true live flag marks a thread live', () => {
+    expect(normalizeThread({id: 'a', live: true})?.live).toBe(true)
+    expect(normalizeThread({id: 'b', live: 'yes'})?.live).toBeUndefined()
+    expect(normalizeThread({id: 'c', live: false})?.live).toBeUndefined()
+    expect(normalizeThread({id: 'd'})?.live).toBeUndefined()
+  })
+
+  it('pins live rooms above pending invites and everything else', () => {
+    const out = normalizeThreads({
+      threads: [
+        {id: 'a', kind: 'group', title: 'A', updatedAt: 100},
+        {
+          id: 'b',
+          kind: 'group',
+          title: 'B',
+          updatedAt: 5,
+          membership: 'pending',
+        },
+        {id: 'c', kind: 'group', title: 'C', updatedAt: 1, live: true},
+      ],
+    })
+    expect(out.map(t => t.id)).toEqual(['c', 'b', 'a'])
+  })
+})
+
+describe('rosterAgentKeys (pure)', () => {
+  it('collects lowercased ids and handles of AGENT members only', () => {
+    const keys = rosterAgentKeys({
+      creatorDid: 'did:plc:owner',
+      members: [
+        {id: 'did:plc:human', kind: 'person'},
+        {
+          id: 'did:plc:agent1',
+          kind: 'agent',
+          handle: 'Ada.PDS.Authority-One.com',
+        },
+        {id: 'Bull.pds.authority-one.com', kind: 'person', isAgent: true},
+        {id: 'p1', kind: 'persona'},
+      ],
+    })
+    expect(keys).toEqual([
+      'did:plc:agent1',
+      'ada.pds.authority-one.com',
+      'bull.pds.authority-one.com',
+    ])
+  })
+
+  it('returns empty for undefined or agent-free rosters', () => {
+    expect(rosterAgentKeys(undefined)).toEqual([])
+    expect(
+      rosterAgentKeys({members: [{id: 'did:plc:human', kind: 'person'}]}),
+    ).toEqual([])
   })
 })
 

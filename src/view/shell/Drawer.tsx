@@ -27,7 +27,6 @@ import {sanitizeHandle} from '#/lib/strings/handles'
 import {colors} from '#/lib/styles'
 import {emitSoftReset} from '#/state/events'
 import {useKawaiiMode} from '#/state/preferences/kawaii'
-import {useOwnerAgentsQuery} from '#/state/queries/agents'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession} from '#/state/session'
@@ -73,6 +72,8 @@ import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {AgentGrid} from '#/features/agentGrid/AgentGrid'
+import {useAgentDirectory} from '#/features/agentGrid/useAgentDirectory'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 
@@ -365,8 +366,8 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
         {hasSession ? (
           <>
-            {/* Authority One agents — promoted to the top so they're the first,
-                obvious entry points (one item per owned agent -> its hub). */}
+            {/* Authority One agents — the headshot grid leads the drawer so
+                "who" (agents) sits above "where" (app destinations below). */}
             <YourAgentsMenuItems />
             <ChatsMenuItem onPress={onPressChats} />
             <ForYouMenuItem onPress={onPressForYou} />
@@ -636,22 +637,21 @@ let ListsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 ListsMenuItem = memo(ListsMenuItem)
 
 /**
- * YOUR AGENTS roster in the drawer — one item per owned agent, mirroring the
- * ChatList roster; tapping opens that agent's AgentHub. Replaces the singular
- * "Talk to your agent" misdirect. Falls back to a single "Your Agents" item
- * (-> ChatList, which explains/creates) when the roster is empty or unavailable.
+ * YOUR AGENTS in the drawer — the headshot grid ("Your agents" + "Chatting
+ * with" sections), so agents read as people, not menu rows. Tapping a tile
+ * opens that agent's AgentHub. Falls back to a single "Your Agents" item
+ * (-> ChatList, which explains/creates) when there are no agents at all.
  */
 let YourAgentsMenuItems = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const t = useTheme()
   const navigation = useNavigation<NavigationProp>()
   const setDrawerOpen = useSetDrawerOpen()
-  const {data} = useOwnerAgentsQuery()
-  const agents = data?.agents ?? []
+  const {isEmpty} = useAgentDirectory()
 
   // Custom (non-Bluesky) items: plain literals / runtime names so they never
   // depend on the compiled Lingui catalog (which would otherwise render as a
   // raw message ID).
-  if (agents.length === 0) {
+  if (isEmpty) {
     return (
       <MenuItem
         icon={<MicIcon style={[t.atoms.text]} width={iconWidth} />}
@@ -664,19 +664,15 @@ let YourAgentsMenuItems = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     )
   }
   return (
-    <>
-      {agents.map(agent => (
-        <MenuItem
-          key={agent.handle}
-          icon={<MicIcon style={[t.atoms.text]} width={iconWidth} />}
-          label={agent.displayName || agent.handle}
-          onPress={() => {
-            navigation.navigate('AgentHub', {agent: agent.handle})
-            setDrawerOpen(false)
-          }}
-        />
-      ))}
-    </>
+    <View style={[a.px_lg, a.pb_sm]}>
+      <AgentGrid
+        tileSize={56}
+        onPressAgent={entry => {
+          navigation.navigate('AgentHub', {agent: entry.handle})
+          setDrawerOpen(false)
+        }}
+      />
+    </View>
   )
 }
 YourAgentsMenuItems = memo(YourAgentsMenuItems)

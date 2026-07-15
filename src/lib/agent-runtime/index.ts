@@ -194,6 +194,7 @@ export {
   pickThreadId,
   removeThreadMember,
   renameThread,
+  rosterAgentKeys,
   sendToThread,
   type Thread,
   type ThreadKind,
