@@ -3,6 +3,7 @@ import {AppState, type AppStateStatus} from 'react-native'
 import {createAsyncStoragePersister} from '@tanstack/query-async-storage-persister'
 import {focusManager, onlineManager, QueryClient} from '@tanstack/react-query'
 import {
+  type PersistedClient,
   type PersistQueryClientOptions,
   PersistQueryClientProvider,
   type PersistQueryClientProviderProps,
@@ -133,13 +134,48 @@ const createQueryClient = () =>
     },
   })
 
+// Query roots whose data is post/feed content. These must NEVER be persisted
+// or hydrated from a persisted payload: feed queries use staleTime INFINITY,
+// so a hydrated feed page renders a stale timeline that never revalidates.
+// Older deployed builds wrote feed queries into the persisted cache, and the
+// buster (app version) never changed, so those payloads survived every
+// update until users manually cleared IndexedDB.
+const NEVER_PERSIST_QUERY_ROOTS = new Set<unknown>([
+  'post-feed',
+  'post-thread-v2',
+  'notification-feed',
+  'search-posts',
+])
+
+// Bump to drop every previously persisted query cache on next app load.
+const PERSIST_CACHE_GENERATION = 2
+
+function isSafeToPersist(queryKey: readonly unknown[]): boolean {
+  return (
+    isQueryPersisted(queryKey) && !NEVER_PERSIST_QUERY_ROOTS.has(queryKey[0])
+  )
+}
+
 const dehydrateOptions: PersistQueryClientProviderProps['persistOptions']['dehydrateOptions'] =
   {
     shouldDehydrateMutation: (_: any) => false,
     shouldDehydrateQuery: query => {
-      return isQueryPersisted(query.queryKey)
+      return isSafeToPersist(query.queryKey)
     },
   }
+
+// Hydration does NOT re-apply shouldDehydrateQuery, so a payload written by
+// an older build can restore queries the current rules would never persist.
+// Filter at restore time as well.
+function deserializePersistedClient(cached: string): PersistedClient {
+  const client = JSON.parse(cached) as PersistedClient
+  if (client?.clientState?.queries) {
+    client.clientState.queries = client.clientState.queries.filter(q =>
+      isSafeToPersist(q.queryKey),
+    )
+  }
+  return client
+}
 
 export function QueryProvider({
   children,
@@ -180,11 +216,16 @@ function QueryProviderInner({
     const asyncPersister = createAsyncStoragePersister({
       storage,
       key: 'queryClient-' + (currentDid ?? 'logged-out'),
+      deserialize: deserializePersistedClient,
     })
     return {
       persister: asyncPersister,
       dehydrateOptions,
-      buster: env.APP_VERSION,
+      // The persisted queries all have short staleTimes, so they revalidate
+      // shortly after being restored; maxAge is a hard ceiling on top of
+      // that (the library default is 24h).
+      maxAge: 1000 * 60 * 60,
+      buster: `${env.APP_VERSION}-${PERSIST_CACHE_GENERATION}`,
     } satisfies Omit<PersistQueryClientOptions, 'queryClient'>
   })
   useEffect(() => {
