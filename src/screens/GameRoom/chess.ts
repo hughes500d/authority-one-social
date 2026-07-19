@@ -115,8 +115,11 @@ export function buildFen(
   return `${ranks.join('/')} ${active} - - 0 1`
 }
 
+// Both colors use the SOLID glyph shapes: the hollow "white" set (U+2654-2659)
+// has thin strokes and no fill, so it nearly vanishes on light squares.
+// Color is conveyed by fill + outline in the board's text styling instead.
 const GLYPHS: Record<ChessColor, Record<ChessPieceType, string>> = {
-  w: {k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙'},
+  w: {k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'},
   b: {k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'},
 }
 

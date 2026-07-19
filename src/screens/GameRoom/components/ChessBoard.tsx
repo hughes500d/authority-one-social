@@ -1,7 +1,7 @@
 import {useState} from 'react'
-import {Pressable, View} from 'react-native'
+import {Pressable, type TextStyle, View} from 'react-native'
 
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import {Text} from '#/components/Typography'
 import {
@@ -23,6 +23,41 @@ const LIGHT_SQUARE = '#ebecd0'
 const LAST_MOVE_TINT = 'rgba(255, 255, 0, 0.4)'
 const SELECT_TINT = 'rgba(255, 255, 0, 0.55)'
 const CHECK_TINT = 'rgba(220, 40, 40, 0.55)'
+
+/**
+ * Both colors render the same solid glyph shapes (see GLYPHS in chess.ts), so
+ * color must come entirely from fill + a contrasting halo outline. The halo is
+ * a ring of offset text shadows on web (RN's single textShadow cannot outline);
+ * native keeps the single-shadow fallback.
+ */
+function pieceStyle(color: ChessColor, size: number): TextStyle[] {
+  const white = color === 'w'
+  const fill = white ? '#f8f8f8' : '#1a1a1a'
+  const halo = white ? 'rgba(20, 20, 20, 0.9)' : 'rgba(248, 248, 248, 0.75)'
+  const o = Math.max(1, Math.round(size * 0.045))
+  return [
+    {
+      fontSize: size * 0.72,
+      lineHeight: size * 0.95,
+      color: fill,
+      textShadowColor: halo,
+      textShadowOffset: {width: 0, height: 0},
+      textShadowRadius: 3,
+    },
+    web({
+      textShadow: [
+        `-${o}px -${o}px 1px ${halo}`,
+        `${o}px -${o}px 1px ${halo}`,
+        `-${o}px ${o}px 1px ${halo}`,
+        `${o}px ${o}px 1px ${halo}`,
+        `0 -${o}px 1px ${halo}`,
+        `0 ${o}px 1px ${halo}`,
+        `-${o}px 0 1px ${halo}`,
+        `${o}px 0 1px ${halo}`,
+      ].join(', '),
+    }),
+  ]
+}
 
 /** Seat '0' plays white, seat '1' black. */
 const colorOfSeat = (seat: string | null): ChessColor | null =>
@@ -197,15 +232,7 @@ export function ChessBoard({
                     />
                   ) : null}
                   {piece ? (
-                    <Text
-                      style={{
-                        fontSize: cellSize * 0.72,
-                        lineHeight: cellSize * 0.95,
-                        color: piece.color === 'w' ? '#ffffff' : '#1a1a1a',
-                        textShadowColor:
-                          piece.color === 'w' ? '#00000088' : '#ffffff44',
-                        textShadowRadius: 2,
-                      }}>
+                    <Text style={pieceStyle(piece.color, cellSize)}>
                       {pieceGlyph(piece)}
                     </Text>
                   ) : isDest ? (
@@ -252,7 +279,7 @@ export function ChessBoard({
               accessibilityHint="Completes the move, promoting the pawn to this piece"
               onPress={() => onPromote(p)}
               style={[a.px_xs]}>
-              <Text style={[{fontSize: 28}, t.atoms.text]}>
+              <Text style={pieceStyle(actingColor, 40)}>
                 {pieceGlyph({color: actingColor, type: p})}
               </Text>
             </Pressable>

@@ -46,8 +46,12 @@ describe('parseFen / buildFen', () => {
     expect(parseFen('garbage').active).toBe('w')
   })
 
-  it('maps glyphs per color', () => {
-    expect(pieceGlyph({color: 'w', type: 'k'})).toBe('♔')
+  it('uses the solid glyph shapes for both colors', () => {
+    // Color comes from fill + outline styling, not the glyph: the hollow
+    // "white" set is illegible on light squares.
+    expect(pieceGlyph({color: 'w', type: 'k'})).toBe('♚')
+    expect(pieceGlyph({color: 'b', type: 'k'})).toBe('♚')
+    expect(pieceGlyph({color: 'w', type: 'p'})).toBe('♟')
     expect(pieceGlyph({color: 'b', type: 'p'})).toBe('♟')
   })
 })
