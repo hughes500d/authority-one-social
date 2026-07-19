@@ -1,8 +1,8 @@
 import {Platform} from 'react-native'
 
 import {authorityOnePalettes as aoP} from '#/alf/themes-authority-one'
-import {darkTheme, defaultTheme, dimTheme} from './themes'
 import {type Theme} from './ThemeContext'
+import {darkTheme, defaultTheme, dimTheme} from './themes'
 
 /**
  * Authority One brand variants of the legacy (`#/lib/ThemeContext`) themes.
@@ -33,9 +33,18 @@ const DISPLAY_SERIF = Platform.select({
 })
 
 const aoTitleTypography = {
-  'title-2xl': {...defaultTheme.typography['title-2xl'], fontFamily: DISPLAY_SERIF},
-  'title-xl': {...defaultTheme.typography['title-xl'], fontFamily: DISPLAY_SERIF},
-  'title-lg': {...defaultTheme.typography['title-lg'], fontFamily: DISPLAY_SERIF},
+  'title-2xl': {
+    ...defaultTheme.typography['title-2xl'],
+    fontFamily: DISPLAY_SERIF,
+  },
+  'title-xl': {
+    ...defaultTheme.typography['title-xl'],
+    fontFamily: DISPLAY_SERIF,
+  },
+  'title-lg': {
+    ...defaultTheme.typography['title-lg'],
+    fontFamily: DISPLAY_SERIF,
+  },
   title: {...defaultTheme.typography['title'], fontFamily: DISPLAY_SERIF},
 }
 

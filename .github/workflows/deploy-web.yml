@@ -34,25 +34,32 @@ jobs:
   #   - pnpm typecheck            (green on main as of 2026-07-19)
   #   - eslint --quiet src modules, minus the 12 known-dirty files
   #     listed below
-  #   - the Jest suite, minus the 5 known-dirty suites listed below
-  #     (1182 tests / 104 suites green, verified twice locally)
+  #   - the FULL Jest suite, no exclusions
+  #     (1248 tests / 109 suites; verified green four consecutive full
+  #     runs locally on 2026-07-19, one with --no-cache)
   #   - pnpm build-web-cf         (the production export itself - the
   #     single most valuable check; a failed build must never ship)
   #
-  # Excluded ON PURPOSE - these are pre-existing failures on clean main
-  # (baseline-dirty), unrelated to any current change. Gating on them
-  # would block every deploy forever. Each exclusion below is a debt
-  # marker: fix the file/suite, then delete its line here.
+  # The five baseline-dirty suites previously excluded here were fixed on
+  # 2026-07-19: tts + authToken asserted the pre-single-login Supabase
+  # token-provider contract; string.test expected the removed
+  # /iframe/youtube.html wrapper (6ad2bbd5f moved YouTube to a direct
+  # youtube-nocookie embed); session-test had stale snapshots predating
+  # the fail-closed AppView default (the CODE was correct - jest with no
+  # env vars resolves to appview.authority-one.com, and the updated
+  # snapshots now guard against ever re-pointing at public Bluesky);
+  # personasFiction was never itself flaky - it was the random victim of
+  # session-test leaking an unawaited network side-effect chain
+  # (reducer removed-account -> createTemporaryAgentsAndResume) whose
+  # late .catch(logger.error) crashed whichever suite the worker ran
+  # next. session-test now mocks that chain to resolve in-file.
   #
-  # Excluded test suites (fail on clean main, 2026-07-19):
-  #   - src/lib/agent-runtime/__tests__/tts.test.ts          (long-standing baseline failure)
-  #   - src/lib/agent-runtime/__tests__/authToken.test.ts    (dead setSupabaseTokenProvider shim)
-  #   - __tests__/lib/string.test.ts                         (baseline failure)
-  #   - src/state/session/__tests__/session-test.ts          (stale snapshots: still expect
-  #     public.api.bsky.app; we changed the default service to appview.authority-one.com)
-  #   - src/lib/agent-runtime/__tests__/personasFiction.test.ts (flaky: fails intermittently)
+  # Excluded ON PURPOSE - pre-existing lint failures on clean main
+  # (baseline-dirty), unrelated to any current change. Each exclusion
+  # below is a debt marker: fix the file, then delete its line here.
   #
-  # Excluded lint files (54 pre-existing errors on clean main, 2026-07-19):
+  # Excluded lint files (51 pre-existing errors in 9 files, 2026-07-19;
+  # three import-sort-only files were autofixed and re-included):
   #   see the --ignore-pattern list in the lint step.
   #
   # Not gated at all: prettier (red on main; cosmetic, tracked by the
@@ -93,29 +100,20 @@ jobs:
           pnpm exec eslint --quiet \
             --ignore-pattern 'src/lib/supabase/__tests__/client.test.ts' \
             --ignore-pattern 'src/lib/supabase/client.ts' \
-            --ignore-pattern 'src/lib/themes-authority-one.ts' \
             --ignore-pattern 'src/screens/AgentChat/__tests__/ApprovalCard.test.tsx' \
             --ignore-pattern 'src/screens/AgentChat/__tests__/MessageBubble.links.test.ts' \
             --ignore-pattern 'src/screens/AgentChat/__tests__/MessageBubble.test.ts' \
             --ignore-pattern 'src/screens/AgentChat/__tests__/useAgentChat.transportError.test.tsx' \
-            --ignore-pattern 'src/screens/AgentChat/__tests__/voiceConversationMachine.test.ts' \
             --ignore-pattern 'src/screens/AgentChat/useVoiceConversation.ts' \
             --ignore-pattern 'src/state/shell/color-mode.tsx' \
             --ignore-pattern 'src/state/supabase/index.tsx' \
-            --ignore-pattern 'src/view/icons/Logomark.tsx' \
             src modules
 
-      # Full Jest suite minus the baseline-dirty suites listed in the note
-      # above. No --bail so a failure reports everything that broke.
-      - name: Tests (stable suites, see exclusion note above)
-        run: |
-          NODE_ENV=test pnpm exec jest --forceExit --testTimeout=20000 \
-            --testPathIgnorePatterns \
-              'src/lib/agent-runtime/__tests__/tts.test.ts' \
-              'src/lib/agent-runtime/__tests__/authToken.test.ts' \
-              '__tests__/lib/string.test.ts' \
-              'src/state/session/__tests__/session-test.ts' \
-              'src/lib/agent-runtime/__tests__/personasFiction.test.ts'
+      # Full Jest suite, no exclusions (see the note above for the history
+      # of the former baseline-dirty suites). No --bail so a failure reports
+      # everything that broke.
+      - name: Tests
+        run: NODE_ENV=test pnpm exec jest --forceExit --testTimeout=20000
 
       - name: Clean previous build output
         run: rm -rf web-build

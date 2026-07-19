@@ -21,6 +21,18 @@ jest.mock('#/lib/notifications/notifications', () => ({
   },
 }))
 
+// The reducer's removed-account/logged-out cases fire an UNAWAITED
+// createTemporaryAgentsAndResume(...) chain. The real impl network-resumes each
+// account (fake hosts like https://alice.com here), settling seconds later -
+// after this file's sandbox is torn down - and the late .catch(logger.error)
+// then crashes whichever suite the worker runs next (seen as random
+// "nanoid is not a function" failures in unrelated suites). Resolve immediately
+// so the side-effect chain completes while this file is still live.
+jest.mock('../util', () => ({
+  ...jest.requireActual<typeof import('../util')>('../util'),
+  createTemporaryAgentsAndResume: () => Promise.resolve([]),
+}))
+
 describe('session', () => {
   it('can log in and out', () => {
     let state = getInitialState([])
@@ -29,7 +41,7 @@ describe('session', () => {
         "accounts": [],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -118,7 +130,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -456,7 +468,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -518,7 +530,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -611,7 +623,7 @@ describe('session', () => {
         "accounts": [],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -791,7 +803,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -1440,7 +1452,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -1506,7 +1518,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },
@@ -1669,7 +1681,7 @@ describe('session', () => {
         ],
         "currentAgentState": {
           "agent": {
-            "service": "https://public.api.bsky.app/",
+            "service": "https://appview.authority-one.com/",
           },
           "did": undefined,
         },

@@ -24,8 +24,15 @@ jest.mock('../config', () => ({
   BOB_VOICE_ID: 'bob-default',
 }))
 
-import {setSupabaseTokenProvider} from '../authToken'
+// SINGLE-LOGIN migration: setSupabaseTokenProvider is a retained no-op, so
+// injecting a token through it no longer works. Mock the token getter itself
+// (same pattern as agentsClient.test.ts).
+jest.mock('../authToken', () => ({getSupabaseAccessToken: jest.fn()}))
+
+import {getSupabaseAccessToken} from '../authToken'
 import {bytesToBase64, fetchBobAudioBase64} from '../tts'
+
+const mockToken = jest.mocked(getSupabaseAccessToken)
 
 function audioResponse(bytes: number[], status = 200): MockAudioResponse {
   return {
@@ -49,11 +56,12 @@ describe('bytesToBase64', () => {
 describe('fetchBobAudioBase64', () => {
   beforeEach(() => {
     mockExpoFetch.mockReset()
-    setSupabaseTokenProvider(() => Promise.resolve('tok-123'))
+    mockToken.mockReset()
+    mockToken.mockResolvedValue('tok-123')
   })
 
   it('returns null (fallback) when signed out — never calls the proxy', async () => {
-    setSupabaseTokenProvider(() => Promise.resolve(null))
+    mockToken.mockResolvedValue(null)
     const out = await fetchBobAudioBase64('hello')
     expect(out).toBeNull()
     expect(mockExpoFetch).not.toHaveBeenCalled()

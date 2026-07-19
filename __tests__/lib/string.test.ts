@@ -464,68 +464,68 @@ describe('parseEmbedPlayerFromUrl', () => {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=1',
+        'https://www.youtube-nocookie.com/embed/videoId?start=1&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=1',
+        'https://www.youtube-nocookie.com/embed/videoId?start=1&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_short',
       source: 'youtubeShorts',
       hideDetails: true,
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
     {
       type: 'youtube_video',
       source: 'youtube',
       playerUri:
-        'https://app.authority-one.com/iframe/youtube.html?videoId=videoId&start=0',
+        'https://www.youtube-nocookie.com/embed/videoId?start=0&autoplay=1&playsinline=1',
     },
 
     undefined,

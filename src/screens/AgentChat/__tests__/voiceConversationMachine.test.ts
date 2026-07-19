@@ -3,8 +3,8 @@ import {describe, expect, it} from '@jest/globals'
 import {
   INITIAL_VOICE_CONV_STATE,
   type VoiceConvEvent,
-  type VoiceConvState,
   voiceConvReducer,
+  type VoiceConvState,
 } from '../voiceConversationMachine'
 
 /** Run a sequence of events from a start state; return the final state + the flat
@@ -53,7 +53,10 @@ describe('voiceConvReducer', () => {
   })
 
   it('ENDPOINT carries the utterance text into SEND', () => {
-    const r = voiceConvReducer('listening', {type: 'ENDPOINT', text: '  hello bob  '})
+    const r = voiceConvReducer('listening', {
+      type: 'ENDPOINT',
+      text: '  hello bob  ',
+    })
     expect(r.state).toBe('thinking')
     expect(r.commands).toEqual([
       {type: 'STOP_LISTENING'},
@@ -83,13 +86,19 @@ describe('voiceConvReducer', () => {
   })
 
   it('barge-in: speech while speaking cuts playback and listens', () => {
-    const r = voiceConvReducer('speaking', {type: 'SPEECH_ACTIVITY', text: 'actually'})
+    const r = voiceConvReducer('speaking', {
+      type: 'SPEECH_ACTIVITY',
+      text: 'actually',
+    })
     expect(r.state).toBe('listening')
     expect(r.commands).toEqual([{type: 'STOP_SPEAKING'}])
   })
 
   it('sub-threshold blip (empty) does NOT barge in', () => {
-    const r = voiceConvReducer('speaking', {type: 'SPEECH_ACTIVITY', text: '   '})
+    const r = voiceConvReducer('speaking', {
+      type: 'SPEECH_ACTIVITY',
+      text: '   ',
+    })
     expect(r.state).toBe('speaking')
     expect(r.commands).toEqual([])
   })
@@ -118,14 +127,24 @@ describe('voiceConvReducer', () => {
   })
 
   it('ERROR recovers the call by listening again', () => {
-    expect(voiceConvReducer('thinking', {type: 'ERROR'}).state).toBe('listening')
-    expect(voiceConvReducer('speaking', {type: 'ERROR'}).state).toBe('listening')
+    expect(voiceConvReducer('thinking', {type: 'ERROR'}).state).toBe(
+      'listening',
+    )
+    expect(voiceConvReducer('speaking', {type: 'ERROR'}).state).toBe(
+      'listening',
+    )
   })
 
   it('events are ignored in non-matching states (no spurious transitions)', () => {
     // A reply arriving while off / listening must not jump to speaking.
-    expect(voiceConvReducer('off', {type: 'REPLY_READY', text: 'x'}).state).toBe('off')
-    expect(voiceConvReducer('listening', {type: 'SPEAK_DONE'}).state).toBe('listening')
-    expect(voiceConvReducer('off', {type: 'SPEECH_ACTIVITY', text: 'x'}).state).toBe('off')
+    expect(
+      voiceConvReducer('off', {type: 'REPLY_READY', text: 'x'}).state,
+    ).toBe('off')
+    expect(voiceConvReducer('listening', {type: 'SPEAK_DONE'}).state).toBe(
+      'listening',
+    )
+    expect(
+      voiceConvReducer('off', {type: 'SPEECH_ACTIVITY', text: 'x'}).state,
+    ).toBe('off')
   })
 })

@@ -30,9 +30,7 @@ describe('normalizeFiction', () => {
     expect(normalizeFiction('x')).toBeUndefined()
   })
   it('defaults enabled false, drops junk haunts', () => {
-    expect(
-      normalizeFiction({haunts: ['a', '', '  ', 2, 'b']}),
-    ).toEqual({
+    expect(normalizeFiction({haunts: ['a', '', '  ', 2, 'b']})).toEqual({
       enabled: false,
       backstory: undefined,
       homeBase: undefined,
@@ -45,10 +43,13 @@ describe('normalizeFiction', () => {
 describe('updatePersona payload', () => {
   it('includes fiction when provided', async () => {
     mockToken.mockResolvedValue('tok')
+    // The response must carry a json() body: without one the client's internal
+    // res.json() throws and the write silently takes the error path.
     global.fetch = jest.fn(() =>
-      Promise.resolve({ok: true, status: 200}),
+      Promise.resolve({ok: true, status: 200, json: () => Promise.resolve({})}),
     ) as unknown as typeof fetch
-    await updatePersona({id: 'p1', name: 'Ada', fiction})
+    const res = await updatePersona({id: 'p1', name: 'Ada', fiction})
+    expect(res.ok).toBe(true)
     const call = (global.fetch as unknown as jest.Mock).mock.calls[0]
     expect(String(call[0])).toContain('/app/personas/update')
     const body = JSON.parse(String((call[1] as {body: string}).body)) as {
@@ -62,7 +63,7 @@ describe('updatePersona payload', () => {
   it('omits fiction entirely when not provided (unchanged prior shape)', async () => {
     mockToken.mockResolvedValue('tok')
     global.fetch = jest.fn(() =>
-      Promise.resolve({ok: true, status: 200}),
+      Promise.resolve({ok: true, status: 200, json: () => Promise.resolve({})}),
     ) as unknown as typeof fetch
     await updatePersona({id: 'p1', name: 'Ada'})
     const call = (global.fetch as unknown as jest.Mock).mock.calls[0]

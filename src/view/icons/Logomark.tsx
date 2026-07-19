@@ -1,7 +1,7 @@
 import Svg, {Path, type PathProps, type SvgProps} from 'react-native-svg'
 
-import {WINDMILL_PATH, WINDMILL_VIEWBOX} from '#/lib/windmillPath'
 import {usePalette} from '#/lib/hooks/usePalette'
+import {WINDMILL_PATH, WINDMILL_VIEWBOX} from '#/lib/windmillPath'
 
 const ratio = 1
 
