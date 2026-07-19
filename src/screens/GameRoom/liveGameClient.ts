@@ -25,6 +25,7 @@ import {type Cell, type TicTacToeG} from './tictactoe'
 import {
   type CheckersMove,
   type ChessMove,
+  type GameChatMsg,
   type GameClient,
   type GameClientOptions,
   type GameCtx,
@@ -228,6 +229,17 @@ export function mapWirePlayers(players: unknown): PlayerInfo[] {
 /** Sender id for chat frames whose `from` is null (spectators). */
 const SPECTATOR_FROM = 'spectator'
 
+/** One wire chat payload ({from,name,text,ts}) → the app shape. PURE,
+ *  defensive — shared by live `chat` frames and the join-time ring replay. */
+export function mapWireChatMsg(m: {[k: string]: unknown}): GameChatMsg {
+  return {
+    from: typeof m.from === 'string' ? m.from : SPECTATOR_FROM,
+    name: typeof m.name === 'string' ? m.name : '',
+    text: typeof m.text === 'string' ? m.text : '',
+    ts: typeof m.ts === 'number' ? m.ts : Date.now(),
+  }
+}
+
 const RECONNECT_BASE_MS = 750
 const RECONNECT_MAX_MS = 15_000
 
@@ -319,13 +331,20 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
         callbacks.onPlayers(mapWirePlayers(frame.players))
         break
       case 'chat':
-        callbacks.onChat({
-          from: typeof frame.from === 'string' ? frame.from : SPECTATOR_FROM,
-          name: typeof frame.name === 'string' ? frame.name : '',
-          text: typeof frame.text === 'string' ? frame.text : '',
-          ts: typeof frame.ts === 'number' ? frame.ts : Date.now(),
-        })
+        callbacks.onChat(mapWireChatMsg(frame))
         break
+      case 'chat-history': {
+        // Join-time replay of the room's chat ring (GAMES.md: sent once to a
+        // joining socket, oldest first) — the screen REPLACES its log with it
+        // so refresh/reconnect restores chat without duplicating.
+        if (!Array.isArray(frame.messages)) break
+        callbacks.onChatHistory?.(
+          (frame.messages as Array<{[k: string]: unknown}>)
+            .filter(m => m && typeof m === 'object')
+            .map(mapWireChatMsg),
+        )
+        break
+      }
       case 'gameover':
         callbacks.onGameover(
           typeof frame.winner === 'string' ? frame.winner : null,

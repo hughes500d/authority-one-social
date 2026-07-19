@@ -226,6 +226,9 @@ function GameRoomInner({
         },
         onPlayers: setPlayers,
         onChat: m => setChat(prev => [...prev, toChatMessage(m)]),
+        // Join-time chat-ring replay: REPLACE the log (a refresh/reconnect
+        // delivers it again — appending would duplicate every line).
+        onChatHistory: msgs => setChat(msgs.map(toChatMessage)),
         // Terminal state also arrives via onState's ctx.gameover (which drives
         // the board status line); nothing extra to do on the dedicated event
         // yet — the live room will use it for recap/social triggers.
@@ -239,6 +242,14 @@ function GameRoomInner({
           // Gentle surface: a transient line in the game pane, never a crash.
           setErrorText(err.message || err.code)
           if (errorTimer.current) clearTimeout(errorTimer.current)
+          // A rejected guest token means this link cannot join AT ALL
+          // (tampered or, more likely, expired) — keep that on screen
+          // instead of stranding the guest on "Joining match…" after a
+          // 2.5-second toast.
+          if (err.code === 'bad-token' || err.code === 'token-required') {
+            errorTimer.current = null
+            return
+          }
           errorTimer.current = setTimeout(
             () => setErrorText(null),
             ERROR_TOAST_MS,
@@ -432,6 +443,22 @@ function GameRoomInner({
       </View>
     ) : null
 
+  // Story mode: chatting with the GM IS the game — flavor the lane that way
+  // instead of the board rooms' trash-talk framing.
+  const chatLane = (
+    <ChatLane
+      messages={chat}
+      selfIds={selfIds}
+      onSend={onSendChat}
+      placeholder={storyMode ? 'Ask, act, or accuse…' : undefined}
+      emptyText={
+        storyMode
+          ? 'The game master is listening — questions and actions are both moves.'
+          : undefined
+      }
+    />
+  )
+
   const gamePane = (boardSize: number) =>
     storyMode ? (
       <View style={[a.flex_1, a.w_full]}>
@@ -501,7 +528,7 @@ function GameRoomInner({
               t.atoms.bg,
               {width: CHAT_COLUMN_WIDTH},
             ]}>
-            <ChatLane messages={chat} selfIds={selfIds} onSend={onSendChat} />
+            {chatLane}
           </View>
         </View>
       </Layout.Screen>
@@ -531,7 +558,7 @@ function GameRoomInner({
           <View style={[a.py_lg, a.align_center]}>{gamePane(boardSize)}</View>
         )}
         <View style={[a.flex_1, a.border_t, t.atoms.border_contrast_low]}>
-          <ChatLane messages={chat} selfIds={selfIds} onSend={onSendChat} />
+          {chatLane}
         </View>
       </View>
     </Layout.Screen>

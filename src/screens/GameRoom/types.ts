@@ -99,12 +99,17 @@ export type ServerMsg =
   | {t: 'chat'; from: string; name: string; text: string; ts: number}
   | {t: 'players'; players: PlayerInfo[]}
   | {t: 'gameover'; winner: string | null}
+  | {t: 'chat-history'; messages: GameChatMsg[]}
   | {t: 'error'; code: string; message: string}
   | ({t: 'scene'} & SceneFrame)
 
 export interface GameCallbacks {
   onState: (G: GameG, ctx: GameCtx, players: PlayerInfo[]) => void
   onChat: (msg: GameChatMsg) => void
+  /** The room's chat ring, sent ONCE to a joining socket (right after its
+   *  state frame). REPLACE the local chat log with it — a re-join (refresh,
+   *  reconnect) delivers it again, so appending would duplicate. */
+  onChatHistory?: (msgs: GameChatMsg[]) => void
   onPlayers: (players: PlayerInfo[]) => void
   onGameover: (winner: string | null) => void
   /** STORY MODE: a new scene replaces the current one. */

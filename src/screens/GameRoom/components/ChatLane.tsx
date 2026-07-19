@@ -24,12 +24,16 @@ export function ChatLane({
   selfIds,
   onSend,
   placeholder = 'Say something…',
+  emptyText = 'Game chat — trash talk encouraged.',
 }: {
   messages: ChatMessage[]
   /** The viewer's sender identity strings, lowercased (playerID today; DID/handle live). */
   selfIds: ReadonlySet<string>
   onSend: (text: string) => void
   placeholder?: string
+  /** Empty-state line. Story mode overrides the board-flavored default —
+   *  there, talking to the GM IS the game, not side chatter. */
+  emptyText?: string
 }) {
   const t = useTheme()
   const [input, setInput] = useState('')
@@ -59,7 +63,7 @@ export function ChatLane({
           <View style={[a.flex_1, a.align_center, a.justify_center]}>
             <Text
               style={[a.text_sm, t.atoms.text_contrast_medium, a.text_center]}>
-              Game chat — trash talk encouraged.
+              {emptyText}
             </Text>
           </View>
         ) : (

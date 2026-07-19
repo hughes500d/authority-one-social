@@ -68,6 +68,7 @@ class FakeWebSocket implements WebSocketLike {
 function harness() {
   const states: Array<{G: unknown; ctx: GameCtx; players: PlayerInfo[]}> = []
   const chats: GameChatMsg[] = []
+  const histories: GameChatMsg[][] = []
   const rosters: PlayerInfo[][] = []
   const gameovers: Array<string | null> = []
   const scenes: SceneFrame[] = []
@@ -77,6 +78,7 @@ function harness() {
   const callbacks: GameCallbacks = {
     onState: (G, ctx, players) => states.push({G, ctx, players}),
     onChat: m => chats.push(m),
+    onChatHistory: msgs => histories.push(msgs),
     onPlayers: p => rosters.push(p),
     onGameover: w => gameovers.push(w),
     onScene: s => scenes.push(s),
@@ -88,6 +90,7 @@ function harness() {
     callbacks,
     states,
     chats,
+    histories,
     rosters,
     gameovers,
     scenes,
@@ -335,6 +338,31 @@ describe('createLiveGameClient', () => {
       choices: [{id: 'go', label: 'Go'}],
     })
     expect(h.errors[0]).toEqual({code: 'invalid-move', message: 'cell taken'})
+  })
+
+  it('replays the join-time chat-history ring through onChatHistory', () => {
+    const h = connect()
+    const ws = FakeWebSocket.latest()
+    ws.serverOpen()
+    ws.serverSend({
+      t: 'chat-history',
+      messages: [
+        {from: '0', name: 'Elliott', text: 'who had keys?', ts: 1},
+        {from: 'agent', name: 'Marlowe', text: 'three keys exist', ts: 2},
+        {from: null, name: 'Visitor', text: 'o/', ts: 3},
+        'garbage-entry',
+      ],
+    })
+    // One replay batch, defensively mapped — NOT appended through onChat.
+    expect(h.histories).toHaveLength(1)
+    expect(h.histories[0]).toHaveLength(3)
+    expect(h.histories[0][0]).toMatchObject({from: '0', text: 'who had keys?'})
+    expect(h.histories[0][1]).toMatchObject({from: 'agent', name: 'Marlowe'})
+    expect(h.histories[0][2].from).toBe('spectator')
+    expect(h.chats).toHaveLength(0)
+    // A malformed frame is ignored, never thrown.
+    ws.serverSend({t: 'chat-history', messages: 'nope'})
+    expect(h.histories).toHaveLength(1)
   })
 
   it('falls back to the other seat, then spectator, on seat-taken', () => {
