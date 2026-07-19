@@ -176,3 +176,40 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy web-build --project-name authority-one-app --branch main
+
+      # Poisoned-edge-cache guard (2026-07-19 incident): a request racing the
+      # deploy can cache the SPA fallback at a hashed asset URL with the
+      # year-long immutable header from _headers, and the app then hangs on
+      # the splash screen for everyone behind that POP. Poll the custom domain
+      # until every script the live index references actually serves
+      # JavaScript; fail the run loudly if one does not. Operator fix when
+      # this fails: re-run this workflow (each Pages deploy purges the
+      # custom-domain cache) or purge the URLs in the Cloudflare dashboard.
+      - name: Verify live assets are not cache-poisoned
+        run: |
+          set -u
+          for attempt in $(seq 1 10); do
+            poisoned=0
+            scripts=$(curl -sf https://app.authority-one.com/ \
+              | grep -o 'static/js/[^"]*\.js' | sort -u)
+            if [ -z "$scripts" ]; then
+              echo "could not extract script URLs from live index"
+              poisoned=1
+            fi
+            for path in $scripts; do
+              ctype=$(curl -s -o /dev/null -w '%{content_type}' \
+                "https://app.authority-one.com/$path")
+              echo "attempt $attempt: $path -> $ctype"
+              case "$ctype" in
+                *javascript*) ;;
+                *) poisoned=1 ;;
+              esac
+            done
+            if [ "$poisoned" = 0 ]; then
+              echo "live assets verified"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::live index references assets that do not serve JavaScript - edge cache is poisoned (see workflow comment for the fix)"
+          exit 1
