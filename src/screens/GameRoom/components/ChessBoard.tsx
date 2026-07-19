@@ -1,0 +1,284 @@
+import {useState} from 'react'
+import {Pressable, View} from 'react-native'
+
+import {atoms as a, useTheme} from '#/alf'
+import {Button, ButtonText} from '#/components/Button'
+import {Text} from '#/components/Typography'
+import {
+  algToSq,
+  type ChessColor,
+  type ChessG,
+  type ChessMove,
+  type ChessPieceType,
+  parseFen,
+  pieceGlyph,
+  PROMOTION_PIECES,
+  sqToAlg,
+} from '../chess'
+import {type GameCtx, type PlayerInfo} from '../gameClient'
+
+/** Fixed board colors (independent of app theme) so the glyphs always read. */
+const DARK_SQUARE = '#739552'
+const LIGHT_SQUARE = '#ebecd0'
+const LAST_MOVE_TINT = 'rgba(255, 255, 0, 0.4)'
+const SELECT_TINT = 'rgba(255, 255, 0, 0.55)'
+const CHECK_TINT = 'rgba(220, 40, 40, 0.55)'
+
+/** Seat '0' plays white, seat '1' black. */
+const colorOfSeat = (seat: string | null): ChessColor | null =>
+  seat === '0' ? 'w' : seat === '1' ? 'b' : null
+
+/**
+ * The tappable chess board plus status line. Purely presentational: the FEN
+ * in the state frame is the whole board, destinations come from the frame's
+ * `legalMoves` (server-computed live, pseudo-legal in the mock), and taps
+ * report a from/to (+ promotion) move up — full rules never run here. When a
+ * destination is a promotion (several legalMoves entries same from/to) a tiny
+ * picker overlays the board, queen first. Last move and check highlight.
+ * Strings are plain literals — custom (non-Bluesky) surface, no Lingui.
+ */
+export function ChessBoard({
+  G,
+  ctx,
+  players,
+  seat,
+  hotSeat = false,
+  boardSize,
+  onMove,
+  onNewGame,
+}: {
+  G: ChessG & {legalMoves: ChessMove[]}
+  ctx: GameCtx
+  players: PlayerInfo[]
+  /** The seat this client holds (null = spectating). */
+  seat: string | null
+  /** Mock hot-seat: taps act for whichever color's turn it is. */
+  hotSeat?: boolean
+  /** Rendered edge length of the square board, in px. */
+  boardSize: number
+  onMove: (from: string, to: string, promotion?: string) => void
+  onNewGame?: () => void
+}) {
+  const t = useTheme()
+  const [selected, setSelected] = useState<number | null>(null)
+  const [promotionChoice, setPromotionChoice] = useState<{
+    from: string
+    to: string
+  } | null>(null)
+
+  const {squares, active} = parseFen(G.fen)
+  const over = ctx.gameover ?? null
+  const nameOf = (id: string) => players.find(p => p.id === id)?.name ?? id
+
+  const myColor = colorOfSeat(seat)
+  const myTurn = hotSeat || (myColor !== null && myColor === active)
+  const interactive = over === null && myTurn
+  const actingColor: ChessColor = hotSeat ? active : (myColor ?? active)
+
+  const destinations =
+    interactive && selected !== null
+      ? G.legalMoves.filter(m => m.from === sqToAlg(selected))
+      : []
+
+  const lastFrom = G.lastMove ? algToSq(G.lastMove.from) : null
+  const lastTo = G.lastMove ? algToSq(G.lastMove.to) : null
+  // Check marks the side to move's king.
+  let checkedKingSq: number | null = null
+  if (G.check && over === null) {
+    for (let i = 0; i < 64; i++) {
+      const p = squares[i]
+      if (p?.type === 'k' && p.color === active) checkedKingSq = i
+    }
+  }
+
+  // "You" gets its own grammar ("Your turn", "You win") — the viewer's row in
+  // the mock roster is literally named that when signed out.
+  const isYou = (id: string) =>
+    (seat === id && !hotSeat) || nameOf(id) === 'You'
+  const status = over
+    ? over.winner !== null
+      ? isYou(over.winner)
+        ? 'You win!'
+        : `${nameOf(over.winner)} wins!`
+      : "It's a draw."
+    : `${isYou(ctx.currentPlayer) ? 'Your turn' : `${nameOf(ctx.currentPlayer)}'s turn`} — ${active === 'w' ? 'white' : 'black'}${G.check ? ' — check!' : ''}`
+
+  const onSquarePress = (i: number) => {
+    if (!interactive) return
+    setPromotionChoice(null)
+    const alg = sqToAlg(i)
+    const dests = destinations.filter(m => m.to === alg)
+    if (selected !== null && dests.length > 0) {
+      if (dests.some(m => m.promotion)) {
+        // Several wire moves share this from/to (one per promotion piece):
+        // let the player pick which piece the pawn becomes.
+        setPromotionChoice({from: dests[0].from, to: alg})
+      } else {
+        onMove(dests[0].from, alg)
+      }
+      setSelected(null)
+      return
+    }
+    const piece = squares[i]
+    if (piece && piece.color === actingColor) {
+      setSelected(i === selected ? null : i)
+    } else {
+      setSelected(null)
+    }
+  }
+
+  const onPromote = (piece: ChessPieceType) => {
+    if (!promotionChoice) return
+    onMove(promotionChoice.from, promotionChoice.to, piece)
+    setPromotionChoice(null)
+  }
+
+  const cellSize = Math.floor(boardSize / 8)
+
+  return (
+    <View style={[a.align_center, a.gap_md]}>
+      <Text
+        testID="gameStatus"
+        style={[a.text_lg, a.font_bold, t.atoms.text]}
+        accessibilityLiveRegion="polite">
+        {status}
+      </Text>
+
+      <View
+        style={[
+          a.rounded_md,
+          a.overflow_hidden,
+          a.border,
+          t.atoms.border_contrast_medium,
+          {width: cellSize * 8, height: cellSize * 8},
+        ]}>
+        {Array.from({length: 8}, (_, row) => (
+          <View key={row} style={[a.flex_row]}>
+            {Array.from({length: 8}, (_, col) => {
+              const i = row * 8 + col
+              const piece = squares[i]
+              const dark = (row + col) % 2 === 1
+              const alg = sqToAlg(i)
+              const isSelected = selected === i && piece !== null
+              const isDest = destinations.some(m => m.to === alg)
+              const tint =
+                checkedKingSq === i
+                  ? CHECK_TINT
+                  : isSelected
+                    ? SELECT_TINT
+                    : lastFrom === i || lastTo === i
+                      ? LAST_MOVE_TINT
+                      : null
+              return (
+                <Pressable
+                  key={i}
+                  testID={`ch-sq-${alg}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    piece
+                      ? `${alg}, ${piece.color === 'w' ? 'white' : 'black'} ${piece.type}`
+                      : `${alg}, empty`
+                  }
+                  accessibilityHint="Selects a piece or moves the selected piece here"
+                  disabled={!interactive}
+                  onPress={() => onSquarePress(i)}
+                  style={[
+                    a.align_center,
+                    a.justify_center,
+                    {
+                      width: cellSize,
+                      height: cellSize,
+                      backgroundColor: dark ? DARK_SQUARE : LIGHT_SQUARE,
+                    },
+                  ]}>
+                  {tint ? (
+                    <View
+                      style={[a.absolute, a.inset_0, {backgroundColor: tint}]}
+                    />
+                  ) : null}
+                  {piece ? (
+                    <Text
+                      style={{
+                        fontSize: cellSize * 0.72,
+                        lineHeight: cellSize * 0.95,
+                        color: piece.color === 'w' ? '#ffffff' : '#1a1a1a',
+                        textShadowColor:
+                          piece.color === 'w' ? '#00000088' : '#ffffff44',
+                        textShadowRadius: 2,
+                      }}>
+                      {pieceGlyph(piece)}
+                    </Text>
+                  ) : isDest ? (
+                    <View
+                      testID={`ch-dest-${alg}`}
+                      style={{
+                        width: cellSize * 0.3,
+                        height: cellSize * 0.3,
+                        borderRadius: cellSize * 0.15,
+                        backgroundColor: 'rgba(20, 20, 20, 0.35)',
+                      }}
+                    />
+                  ) : null}
+                </Pressable>
+              )
+            })}
+          </View>
+        ))}
+      </View>
+
+      {promotionChoice ? (
+        <View
+          testID="promotionPicker"
+          style={[
+            a.flex_row,
+            a.align_center,
+            a.gap_sm,
+            a.px_md,
+            a.py_sm,
+            a.rounded_md,
+            a.border,
+            t.atoms.border_contrast_medium,
+            t.atoms.bg,
+          ]}>
+          <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+            Promote to
+          </Text>
+          {PROMOTION_PIECES.map(p => (
+            <Pressable
+              key={p}
+              testID={`promote-${p}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Promote to ${p}`}
+              accessibilityHint="Completes the move, promoting the pawn to this piece"
+              onPress={() => onPromote(p)}
+              style={[a.px_xs]}>
+              <Text style={[{fontSize: 28}, t.atoms.text]}>
+                {pieceGlyph({color: actingColor, type: p})}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      {onNewGame == null ? null : over ? (
+        <Button
+          testID="newGameBtn"
+          label="New game"
+          color="primary"
+          size="small"
+          onPress={onNewGame}>
+          <ButtonText>New game</ButtonText>
+        </Button>
+      ) : (
+        <Button
+          testID="newGameBtn"
+          label="Restart game"
+          color="secondary"
+          size="small"
+          onPress={onNewGame}>
+          <ButtonText>Restart</ButtonText>
+        </Button>
+      )}
+    </View>
+  )
+}

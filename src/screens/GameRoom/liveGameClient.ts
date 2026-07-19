@@ -19,12 +19,18 @@
  */
 import {AGENT_RUNTIME_BASE_URL} from '#/lib/agent-runtime'
 import {logger} from '#/logger'
+import {CHECKERS_BOARD_SIZE, type CheckersCell} from './checkers'
+import {INITIAL_FEN} from './chess'
 import {type Cell, type TicTacToeG} from './tictactoe'
 import {
+  type CheckersMove,
+  type ChessMove,
   type GameClient,
   type GameClientOptions,
   type GameCtx,
   type GameErrorMsg,
+  type GameG,
+  type GameKind,
   type GameMove,
   type PlayerInfo,
   type SceneFrame,
@@ -47,7 +53,135 @@ export function gameWsUrl(
   return `${ws}/games/${encodeURIComponent(matchID)}/ws`
 }
 
-/** Wire `G` ({cells}) + ctx → the app's TicTacToeG. PURE, defensive. */
+/** Which game a wire state frame carries: the explicit `game` field when the
+ *  server sends one, else inferred from the G shape. PURE. */
+export function wireGameKind(frame: {game?: unknown; G?: unknown}): GameKind {
+  if (
+    frame.game === 'chess' ||
+    frame.game === 'checkers' ||
+    frame.game === 'tic-tac-toe'
+  ) {
+    return frame.game
+  }
+  const G = (frame.G ?? {}) as {fen?: unknown; board?: unknown}
+  if (typeof G.fen === 'string') return 'chess'
+  if (Array.isArray(G.board) && G.board.length === CHECKERS_BOARD_SIZE) {
+    return 'checkers'
+  }
+  return 'tic-tac-toe'
+}
+
+/** Wire checkers `G` ({board:[64], mustContinueFrom?}) + frame legalMoves +
+ *  ctx → the app shape. PURE, defensive. */
+export function mapWireCheckers(
+  G: unknown,
+  legalMoves: unknown,
+  ctx: unknown,
+): {G: GameG; ctx: GameCtx} {
+  const wire = (G ?? {}) as {board?: unknown; mustContinueFrom?: unknown}
+  const raw = Array.isArray(wire.board) ? wire.board : []
+  const board: CheckersCell[] = Array.from(
+    {length: CHECKERS_BOARD_SIZE},
+    (_, i) => {
+      const cell = raw[i] as {player?: unknown; king?: unknown} | null
+      const player = Number(cell?.player)
+      if (!cell || (player !== 0 && player !== 1)) return null
+      return {player, king: cell.king === true}
+    },
+  )
+  const moves: CheckersMove[] = Array.isArray(legalMoves)
+    ? (legalMoves as Array<{from?: unknown; to?: unknown; captures?: unknown}>)
+        .filter(
+          m =>
+            Number.isInteger(m?.from) &&
+            Number.isInteger(m?.to) &&
+            (m.from as number) >= 0 &&
+            (m.from as number) < CHECKERS_BOARD_SIZE &&
+            (m.to as number) >= 0 &&
+            (m.to as number) < CHECKERS_BOARD_SIZE,
+        )
+        .map(m => ({
+          from: m.from as number,
+          to: m.to as number,
+          ...(Array.isArray(m.captures)
+            ? {captures: m.captures.filter(c => Number.isInteger(c))}
+            : {}),
+        }))
+    : []
+  const c = (ctx ?? {}) as {currentPlayer?: unknown; gameover?: unknown}
+  const currentPlayer = c.currentPlayer === '1' ? '1' : '0'
+  return {
+    G: {
+      kind: 'checkers',
+      board,
+      currentPlayer,
+      mustContinueFrom: Number.isInteger(wire.mustContinueFrom)
+        ? (wire.mustContinueFrom as number)
+        : null,
+      legalMoves: moves,
+    },
+    ctx: {currentPlayer, gameover: mapWireGameover(c.gameover)},
+  }
+}
+
+/** Wire chess `G` ({fen, check?, lastMove?}) + frame legalMoves + ctx → the
+ *  app shape. PURE, defensive. */
+export function mapWireChess(
+  G: unknown,
+  legalMoves: unknown,
+  ctx: unknown,
+): {G: GameG; ctx: GameCtx} {
+  const wire = (G ?? {}) as {fen?: unknown; check?: unknown; lastMove?: unknown}
+  const last = wire.lastMove as {from?: unknown; to?: unknown} | null
+  const moves: ChessMove[] = Array.isArray(legalMoves)
+    ? (legalMoves as Array<{from?: unknown; to?: unknown; promotion?: unknown}>)
+        .filter(m => typeof m?.from === 'string' && typeof m?.to === 'string')
+        .map(m => ({
+          from: m.from as string,
+          to: m.to as string,
+          ...(typeof m.promotion === 'string' ? {promotion: m.promotion} : {}),
+        }))
+    : []
+  const c = (ctx ?? {}) as {currentPlayer?: unknown; gameover?: unknown}
+  const currentPlayer = c.currentPlayer === '1' ? '1' : '0'
+  return {
+    G: {
+      kind: 'chess',
+      fen:
+        typeof wire.fen === 'string' && wire.fen.length > 0
+          ? wire.fen
+          : INITIAL_FEN,
+      check: wire.check === true,
+      lastMove:
+        last && typeof last.from === 'string' && typeof last.to === 'string'
+          ? {from: last.from, to: last.to}
+          : null,
+      legalMoves: moves,
+    },
+    ctx: {currentPlayer, gameover: mapWireGameover(c.gameover)},
+  }
+}
+
+/** One wire state frame → the app's tagged GameG + ctx, whatever the game. */
+export function mapWireGameFrame(frame: {
+  game?: unknown
+  G?: unknown
+  ctx?: unknown
+  legalMoves?: unknown
+  [k: string]: unknown
+}): {G: GameG; ctx: GameCtx} {
+  const kind = wireGameKind(frame)
+  if (kind === 'chess') {
+    return mapWireChess(frame.G, frame.legalMoves, frame.ctx)
+  }
+  if (kind === 'checkers') {
+    return mapWireCheckers(frame.G, frame.legalMoves, frame.ctx)
+  }
+  const {G, ctx} = mapWireState(frame.G, frame.ctx)
+  return {G: {kind: 'tic-tac-toe', ...G}, ctx}
+}
+
+/** Wire tic-tac-toe `G` ({cells}) + ctx → the app's TicTacToeG. PURE, defensive. */
 export function mapWireState(
   G: unknown,
   ctx: unknown,
@@ -144,7 +278,16 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
   }
 
   const joinCurrentSeat = () => {
-    send({t: 'join', matchID, playerID: seat, name})
+    // The guest capability token (?t= link) rides every join — including
+    // seat-fallback and reconnect re-joins — so the DO can authorize the
+    // account-less socket. Omitted entirely for signed-in play.
+    send({
+      t: 'join',
+      matchID,
+      playerID: seat,
+      name,
+      ...(opts.token ? {token: opts.token} : {}),
+    })
     callbacks.onSeat?.(seat)
   }
 
@@ -165,7 +308,7 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
   const handleFrame = (frame: {[k: string]: unknown; t?: unknown}) => {
     switch (frame.t) {
       case 'state': {
-        const {G, ctx} = mapWireState(frame.G, frame.ctx)
+        const {G, ctx} = mapWireGameFrame(frame)
         everJoined = true
         reconnectAttempt = 0
         callbacks.onConnection?.('online')

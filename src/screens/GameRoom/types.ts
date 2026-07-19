@@ -3,13 +3,32 @@
  * documented in gameClient.ts. In their own module so every transport
  * (mock, live WebSocket, story mock) can import them without cycles.
  */
+import {type CheckersG, type CheckersMove, type CheckersPiece} from './checkers'
+import {type ChessG, type ChessMove} from './chess'
 import {type TicTacToeG} from './tictactoe'
 
-/** A move envelope. Tic-tac-toe uses {type:'place', args:{cell: 0-8}}. */
+export type {CheckersG, CheckersMove, CheckersPiece, ChessG, ChessMove}
+
+/** Which board game a match plays. Story matches never carry a board G. */
+export type GameKind = 'tic-tac-toe' | 'checkers' | 'chess'
+
+/** A move envelope. Tic-tac-toe uses {type:'place', args:{cell: 0-8}};
+ *  checkers {type:'move', args:{from,to}} (board indices); chess
+ *  {type:'move', args:{from:'e2', to:'e4', promotion?}}. */
 export interface GameMove {
   type: string
   args?: Record<string, unknown>
 }
+
+/**
+ * App-side game state: the wire `G` (plus the frame-level `legalMoves` for
+ * games whose rules live server-side) tagged with the game it belongs to, so
+ * the screen can pick the right board component off one field.
+ */
+export type GameG =
+  | ({kind: 'tic-tac-toe'} & TicTacToeG)
+  | ({kind: 'checkers'; legalMoves: CheckersMove[]} & CheckersG)
+  | ({kind: 'chess'; legalMoves: ChessMove[]} & ChessG)
 
 export interface PlayerInfo {
   id: string
@@ -57,16 +76,26 @@ export interface GameErrorMsg {
 /** Live transport connection status, for a gentle UI indicator. */
 export type GameConnectionStatus = 'connecting' | 'online' | 'reconnecting'
 
-/** Client → server frames (documentation of the wire shape; the mocks never serialize). */
+/** Client → server frames (documentation of the wire shape; the mocks never
+ *  serialize). `token` is the GUEST capability token from a `?t=` link —
+ *  validated and match-scoped server-side; omitted entirely for signed-in
+ *  joins. */
 export type ClientMsg =
-  | {t: 'join'; matchID: string; playerID: string | null; name: string}
+  | {
+      t: 'join'
+      matchID: string
+      playerID: string | null
+      name: string
+      token?: string
+    }
   | {t: 'move'; move: GameMove}
   | {t: 'chat'; text: string}
   | {t: 'choice'; id: string}
 
-/** Server → client frames (app-side shapes; the live client maps wire G/players). */
+/** Server → client frames (app-side shapes; the live client maps wire G /
+ *  legalMoves / players). */
 export type ServerMsg =
-  | {t: 'state'; G: TicTacToeG; ctx: GameCtx; players: PlayerInfo[]}
+  | {t: 'state'; G: GameG; ctx: GameCtx; players: PlayerInfo[]}
   | {t: 'chat'; from: string; name: string; text: string; ts: number}
   | {t: 'players'; players: PlayerInfo[]}
   | {t: 'gameover'; winner: string | null}
@@ -74,7 +103,7 @@ export type ServerMsg =
   | ({t: 'scene'} & SceneFrame)
 
 export interface GameCallbacks {
-  onState: (G: TicTacToeG, ctx: GameCtx, players: PlayerInfo[]) => void
+  onState: (G: GameG, ctx: GameCtx, players: PlayerInfo[]) => void
   onChat: (msg: GameChatMsg) => void
   onPlayers: (players: PlayerInfo[]) => void
   onGameover: (winner: string | null) => void
@@ -93,6 +122,12 @@ export interface GameClientOptions {
   matchID: string
   playerID: string
   name: string
+  /** Which game the MOCK transports should run (default tic-tac-toe). Live
+   *  matches report their game through the state frame instead. */
+  game?: GameKind
+  /** Guest capability token (from a `?t=` link) to pass on the join frame.
+   *  Absent for signed-in play. */
+  token?: string
   callbacks: GameCallbacks
 }
 

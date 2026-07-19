@@ -3,10 +3,14 @@ import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {
   createLiveGameClient,
   gameWsUrl,
+  mapWireCheckers,
+  mapWireChess,
+  mapWireGameFrame,
   mapWireGameover,
   mapWirePlayers,
   mapWireState,
   type WebSocketLike,
+  wireGameKind,
 } from '../liveGameClient'
 import {
   type GameCallbacks,
@@ -154,6 +158,91 @@ describe('wire mapping', () => {
   })
 })
 
+describe('per-game wire mapping', () => {
+  const CHECKERS_BOARD = Array(64).fill(null)
+  CHECKERS_BOARD[35] = {player: 0, king: false}
+  CHECKERS_BOARD[28] = {player: 1, king: true}
+
+  it('detects the game from an explicit game field or the G shape', () => {
+    expect(wireGameKind({game: 'chess'})).toBe('chess')
+    expect(wireGameKind({game: 'checkers'})).toBe('checkers')
+    expect(wireGameKind({G: {fen: 'x'}})).toBe('chess')
+    expect(wireGameKind({G: {board: CHECKERS_BOARD}})).toBe('checkers')
+    expect(wireGameKind({G: {cells: Array(9).fill(null)}})).toBe('tic-tac-toe')
+    expect(wireGameKind({})).toBe('tic-tac-toe')
+  })
+
+  it('maps a checkers state frame (board, mustContinueFrom, legalMoves)', () => {
+    const {G, ctx} = mapWireCheckers(
+      {board: CHECKERS_BOARD, mustContinueFrom: 35},
+      [
+        {from: 35, to: 21, captures: [28]},
+        {from: -1, to: 999}, // out of range — dropped
+        {from: 'x', to: 21}, // malformed — dropped
+      ],
+      {currentPlayer: '0'},
+    )
+    if (G.kind !== 'checkers') throw new Error('expected checkers G')
+    expect(G.board).toHaveLength(64)
+    expect(G.board[35]).toEqual({player: 0, king: false})
+    expect(G.board[28]).toEqual({player: 1, king: true})
+    expect(G.mustContinueFrom).toBe(35)
+    expect(G.legalMoves).toEqual([{from: 35, to: 21, captures: [28]}])
+    expect(ctx.currentPlayer).toBe('0')
+    expect(ctx.gameover).toBeNull()
+  })
+
+  it('normalizes malformed checkers cells and absent legalMoves', () => {
+    const {G} = mapWireCheckers(
+      {board: [{player: 2}, 'junk', {player: '1', king: true}]},
+      undefined,
+      {},
+    )
+    if (G.kind !== 'checkers') throw new Error('expected checkers G')
+    expect(G.board[0]).toBeNull()
+    expect(G.board[1]).toBeNull()
+    expect(G.board[2]).toEqual({player: 1, king: true})
+    expect(G.legalMoves).toEqual([])
+    expect(G.mustContinueFrom).toBeNull()
+  })
+
+  it('maps a chess state frame (fen, check, lastMove, legalMoves)', () => {
+    const {G, ctx} = mapWireChess(
+      {
+        fen: '8/8/8/8/8/8/8/k6K b - - 0 1',
+        check: true,
+        lastMove: {from: 'e2', to: 'e4'},
+      },
+      [
+        {from: 'a1', to: 'a2'},
+        {from: 'a7', to: 'a8', promotion: 'q'},
+        {from: 7, to: 'a2'}, // malformed — dropped
+      ],
+      {currentPlayer: '1', gameover: {winner: '0'}},
+    )
+    if (G.kind !== 'chess') throw new Error('expected chess G')
+    expect(G.fen).toBe('8/8/8/8/8/8/8/k6K b - - 0 1')
+    expect(G.check).toBe(true)
+    expect(G.lastMove).toEqual({from: 'e2', to: 'e4'})
+    expect(G.legalMoves).toEqual([
+      {from: 'a1', to: 'a2'},
+      {from: 'a7', to: 'a8', promotion: 'q'},
+    ])
+    expect(ctx.currentPlayer).toBe('1')
+    expect(ctx.gameover).toEqual({winner: '0'})
+  })
+
+  it('mapWireGameFrame routes to the right mapper and tags the kind', () => {
+    expect(
+      mapWireGameFrame({G: {cells: Array(9).fill(null)}, ctx: {}}).G.kind,
+    ).toBe('tic-tac-toe')
+    expect(
+      mapWireGameFrame({game: 'checkers', G: {board: []}, ctx: {}}).G.kind,
+    ).toBe('checkers')
+    expect(mapWireGameFrame({G: {fen: 'x'}, ctx: {}}).G.kind).toBe('chess')
+  })
+})
+
 describe('createLiveGameClient', () => {
   let client: GameClient | null = null
 
@@ -297,6 +386,74 @@ describe('createLiveGameClient', () => {
     third.serverOpen()
     expect(third.sent[0]).toMatchObject({t: 'join', playerID: '0'})
     expect(h.errors).toHaveLength(0)
+  })
+
+  it('GUEST MODE: the capability token rides every join frame', () => {
+    const h = harness()
+    client = createLiveGameClient({
+      matchID: 'm-uuid',
+      playerID: '1',
+      name: 'Austin',
+      token: 'cap-token-123',
+      callbacks: h.callbacks,
+      baseUrl: 'https://worker.example.dev',
+      webSocketImpl: FakeWebSocket,
+    })
+    client.connect()
+    const first = FakeWebSocket.latest()
+    first.serverOpen()
+    expect(first.sent[0]).toEqual({
+      t: 'join',
+      matchID: 'm-uuid',
+      playerID: '1',
+      name: 'Austin',
+      token: 'cap-token-123',
+    })
+    // Seat fallback keeps the token…
+    first.serverSend({t: 'error', code: 'seat-taken', message: 'held'})
+    expect(first.sent[1]).toMatchObject({playerID: '0', token: 'cap-token-123'})
+    // …and so does a reconnect re-join.
+    first.serverSend(WIRE_STATE)
+    first.serverDrop()
+    jest.advanceTimersByTime(800)
+    const second = FakeWebSocket.latest()
+    second.serverOpen()
+    expect(second.sent[0]).toMatchObject({token: 'cap-token-123'})
+  })
+
+  it('signed-in joins carry NO token field at all', () => {
+    connect()
+    const ws = FakeWebSocket.latest()
+    ws.serverOpen()
+    expect('token' in ws.sent[0]).toBe(false)
+  })
+
+  it('handles a live checkers state frame and serializes from/to moves', () => {
+    const h = connect()
+    const ws = FakeWebSocket.latest()
+    ws.serverOpen()
+    const board = Array(64).fill(null)
+    board[42] = {player: 0, king: false}
+    ws.serverSend({
+      t: 'state',
+      game: 'checkers',
+      G: {board},
+      ctx: {currentPlayer: '0'},
+      legalMoves: [
+        {from: 42, to: 33},
+        {from: 42, to: 35},
+      ],
+      players: {'0': {name: 'Austin', connected: true}},
+    })
+    const state = h.states[h.states.length - 1]
+    const G = state.G as {kind: string; legalMoves: unknown[]}
+    expect(G.kind).toBe('checkers')
+    expect(G.legalMoves).toHaveLength(2)
+    client!.sendMove({type: 'move', args: {from: 42, to: 33}})
+    expect(ws.sent[ws.sent.length - 1]).toEqual({
+      t: 'move',
+      move: {type: 'move', args: {from: 42, to: 33}},
+    })
   })
 
   it('disconnect() closes the socket and stops reconnection', () => {

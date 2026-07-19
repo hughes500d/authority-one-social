@@ -121,7 +121,25 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
-  if (!hasSession && (activeRouteRequiresAuth || IS_NATIVE)) {
+  // GUEST GAME LINKS: a live GameRoom link carrying a capability token
+  // (`/game/<matchID>?t=…`) opens with NO account — the token is validated
+  // and match-scoped server-side on the WS join, so waiving the login wall
+  // here exposes nothing beyond that one match. Exactly this shape only:
+  // every other GameRoom route (and every other screen) keeps requireAuth.
+  const guestParams = activeRoute.params as
+    | {matchId?: unknown; t?: unknown}
+    | undefined
+  const isGuestGameRoute =
+    activeRoute.name === 'GameRoom' &&
+    typeof guestParams?.matchId === 'string' &&
+    guestParams.matchId.length > 0 &&
+    typeof guestParams?.t === 'string' &&
+    guestParams.t.length > 0
+  if (
+    !hasSession &&
+    !isGuestGameRoute &&
+    (activeRouteRequiresAuth || IS_NATIVE)
+  ) {
     return <LoggedOut />
   }
   if (hasSession && currentAccount?.signupQueued) {

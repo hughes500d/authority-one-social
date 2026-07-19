@@ -1,21 +1,29 @@
 import {useEffect, useRef, useState} from 'react'
 import {useWindowDimensions, View} from 'react-native'
+import {useNavigation} from '@react-navigation/native'
 
 import {type ChatMessage} from '#/lib/agent-runtime'
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
+  type NavigationProp,
 } from '#/lib/routes/types'
 import {useSession} from '#/state/session'
 import {LEFT_NAV_MINIMAL_WIDTH} from '#/view/shell/desktop/LeftNav'
 import {atoms as a, useLayoutBreakpoints, useTheme, web} from '#/alf'
+import {Button, ButtonText} from '#/components/Button'
 import * as Layout from '#/components/Layout'
 import {CENTER_COLUMN_WIDTH, SCROLLBAR_OFFSET} from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
+import {initialCheckersG} from './checkers'
+import {INITIAL_FEN} from './chess'
 import {Board} from './components/Board'
 import {ChatLane} from './components/ChatLane'
+import {CheckersBoard} from './components/CheckersBoard'
+import {ChessBoard} from './components/ChessBoard'
 import {ScenePane} from './components/ScenePane'
+import {createLiveMatch} from './createMatch'
 import {
   createGameClient,
   FORCE_MOCK_TRANSPORT,
@@ -23,11 +31,13 @@ import {
   type GameClient,
   type GameConnectionStatus,
   type GameCtx,
+  type GameG,
+  type GameKind,
   type GameTransport,
   type PlayerInfo,
   type SceneFrame,
 } from './gameClient'
-import {initialG, type TicTacToeG} from './tictactoe'
+import {initialG} from './tictactoe'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'GameRoom'>
 
@@ -37,6 +47,35 @@ const CHAT_COLUMN_WIDTH = 360
 /** How long a server rejection (invalid move etc) stays on screen. */
 const ERROR_TOAST_MS = 2500
 
+const GAME_TITLES: Record<GameKind, string> = {
+  'tic-tac-toe': 'Tic-tac-toe',
+  checkers: 'Checkers',
+  chess: 'Chess',
+}
+const GAME_KINDS: GameKind[] = ['tic-tac-toe', 'checkers', 'chess']
+
+function asGameKind(v: unknown): GameKind {
+  return v === 'checkers' || v === 'chess' ? v : 'tic-tac-toe'
+}
+
+/** The pre-first-frame state for a room of this game (the mocks and the live
+ *  server both replace it with an authoritative snapshot on join). */
+function initialAppG(kind: GameKind): GameG {
+  if (kind === 'checkers') {
+    return {kind, ...initialCheckersG(), legalMoves: []}
+  }
+  if (kind === 'chess') {
+    return {
+      kind,
+      fen: INITIAL_FEN,
+      check: false,
+      lastMove: null,
+      legalMoves: [],
+    }
+  }
+  return {kind, ...initialG()}
+}
+
 /**
  * GameRoom — one responsive screen, two orientations, chat ALWAYS visible
  * (the agent + community chat are part of gameplay, not a separate surface):
@@ -45,15 +84,23 @@ const ERROR_TOAST_MS = 2500
  *   wide (TV / desktop / landscape): game pane LEFT, chat lane RIGHT
  *
  * TWO game-pane modes share that layout engine:
- *   board — the tic-tac-toe board (mock hot-seat, or the LIVE GameMatchDO)
+ *   board — a tappable board (tic-tac-toe / checkers / chess — mock hot-seat,
+ *           or the LIVE GameMatchDO; the state frame names the game)
  *   story — the narrative ScenePane (illustration + text + choice buttons),
  *           where the chat lane is the primary play surface (agent GM)
  *
- * Transport is decided by the ROUTE: `/game` runs the local mock,
- * `/game?mode=story` the canned story mock, and `/game/<matchID>` joins the
- * LIVE match over WebSocket (matchID is the capability UUID from match
- * create). A live server can also flip the pane to story by sending scene
- * frames. All traffic flows through the GameClient seam (gameClient.ts).
+ * Transport is decided by the ROUTE: `/game` runs the local mock
+ * (`?game=checkers|chess` picks the mock board), `/game?mode=story` the
+ * canned story mock, and `/game/<matchID>` joins the LIVE match over
+ * WebSocket (matchID is the capability UUID from match create). A live
+ * server can also flip the pane to story by sending scene frames. All
+ * traffic flows through the GameClient seam (gameClient.ts).
+ *
+ * GUEST MODE (no login): a live link carrying `?t=<capability token>` opens
+ * WITHOUT an account — the navigator waives requireAuth for exactly that
+ * shape (see createNativeStackNavigatorWithAuth), and the token rides the WS
+ * join frame for the server to validate + scope to this one match. `?name=`
+ * names the guest (default "Guest"). The signed-in flow is unchanged.
  */
 export function GameRoomScreen({route}: Props) {
   // A fresh mount per room identity keeps game + chat state from leaking
@@ -62,13 +109,25 @@ export function GameRoomScreen({route}: Props) {
   const live = !!route.params?.matchId && !FORCE_MOCK_TRANSPORT
   const storyRoute = route.params?.mode === 'story'
   const requestedSeat = route.params?.seat === '1' ? '1' : '0'
+  const game = asGameKind(route.params?.game)
+  const guestToken =
+    live && typeof route.params?.t === 'string' && route.params.t.length > 0
+      ? route.params.t
+      : undefined
+  const guestName =
+    typeof route.params?.name === 'string' && route.params.name.trim()
+      ? route.params.name.trim().slice(0, 40)
+      : undefined
   return (
     <GameRoomInner
-      key={`${matchId}:${storyRoute ? 'story' : 'board'}`}
+      key={`${matchId}:${storyRoute ? 'story' : 'board'}:${game}`}
       matchId={matchId}
       live={live}
       storyRoute={storyRoute}
       requestedSeat={requestedSeat}
+      game={game}
+      guestToken={guestToken}
+      guestName={guestName}
     />
   )
 }
@@ -78,19 +137,28 @@ function GameRoomInner({
   live,
   storyRoute,
   requestedSeat,
+  game,
+  guestToken,
+  guestName,
 }: {
   matchId: string
   live: boolean
   storyRoute: boolean
   requestedSeat: string
+  game: GameKind
+  guestToken?: string
+  guestName?: string
 }) {
   const t = useTheme()
   const {width, height} = useWindowDimensions()
   const {centerColumnOffset} = useLayoutBreakpoints()
   const {currentAccount} = useSession()
+  const navigation = useNavigation<NavigationProp>()
 
-  const playerName =
-    currentAccount?.handle?.split('.')[0] ?? currentAccount?.handle ?? 'You'
+  const isGuest = !!guestToken && !currentAccount
+  const playerName = isGuest
+    ? (guestName ?? 'Guest')
+    : (currentAccount?.handle?.split('.')[0] ?? currentAccount?.handle ?? 'You')
 
   // "New game" recreates the client against a fresh match generation — the
   // contract-clean reset for the LOCAL mock only (a live match id is minted
@@ -98,7 +166,7 @@ function GameRoomInner({
   const [generation, setGeneration] = useState(0)
   const matchID = generation === 0 ? matchId : `${matchId}~${generation}`
 
-  const [G, setG] = useState<TicTacToeG>(() => initialG())
+  const [G, setG] = useState<GameG>(() => initialAppG(game))
   const [ctx, setCtx] = useState<GameCtx>({currentPlayer: '0'})
   const [players, setPlayers] = useState<PlayerInfo[]>([])
   const [chat, setChat] = useState<ChatMessage[]>([])
@@ -111,6 +179,11 @@ function GameRoomInner({
   const [connection, setConnection] = useState<GameConnectionStatus | null>(
     null,
   )
+  // A live room shows "joining" until the first authoritative snapshot names
+  // the game — rendering a guessed board first would flash the wrong one.
+  const [hasState, setHasState] = useState(!live)
+  // "New game" launcher: which game is mid-create (disables the row).
+  const [creating, setCreating] = useState<GameKind | null>(null)
 
   const clientRef = useRef<GameClient | null>(null)
   const chatSeq = useRef(0)
@@ -121,6 +194,12 @@ function GameRoomInner({
     : storyRoute
       ? 'mock-story'
       : 'mock'
+
+  const flashError = (message: string) => {
+    setErrorText(message)
+    if (errorTimer.current) clearTimeout(errorTimer.current)
+    errorTimer.current = setTimeout(() => setErrorText(null), ERROR_TOAST_MS)
+  }
 
   useEffect(() => {
     const toChatMessage = (m: GameChatMsg): ChatMessage => ({
@@ -136,11 +215,14 @@ function GameRoomInner({
       playerID: requestedSeat,
       name: playerName,
       transport,
+      game,
+      token: guestToken,
       callbacks: {
         onState: (g, c, p) => {
           setG(g)
           setCtx(c)
           setPlayers(p)
+          setHasState(true)
         },
         onPlayers: setPlayers,
         onChat: m => setChat(prev => [...prev, toChatMessage(m)]),
@@ -175,7 +257,7 @@ function GameRoomInner({
         errorTimer.current = null
       }
     }
-  }, [matchID, requestedSeat, playerName, transport])
+  }, [matchID, requestedSeat, playerName, transport, game, guestToken])
 
   // Pure width-driven orientation (see docblock).
   const wide = width >= (IS_WEB ? 1100 : 900)
@@ -188,9 +270,6 @@ function GameRoomInner({
   const participants =
     players.length > 0 ? players.map(p => p.name).join(' vs ') : null
 
-  const onCellPress = (cell: number) => {
-    clientRef.current?.sendMove({type: 'place', args: {cell}})
-  }
   const onSendChat = (text: string) => {
     clientRef.current?.sendChat(text)
   }
@@ -200,11 +279,23 @@ function GameRoomInner({
   }
   const onNewGame = () => setGeneration(g => g + 1)
 
+  const onCreateMatch = async (kind: GameKind) => {
+    if (creating) return
+    setCreating(kind)
+    const res = await createLiveMatch(kind)
+    setCreating(null)
+    if (res.ok && res.matchID) {
+      navigation.navigate('GameRoom', {matchId: res.matchID})
+    } else {
+      flashError(res.error ?? 'Could not create the match.')
+    }
+  }
+
   const subtitle = storyMode
     ? (scene?.title ?? 'Story')
     : participants
-      ? `Tic-tac-toe — ${participants}`
-      : null
+      ? `${GAME_TITLES[G.kind]} — ${participants}`
+      : GAME_TITLES[G.kind]
 
   const header = (
     <Layout.Header.Outer>
@@ -246,6 +337,101 @@ function GameRoomInner({
       </View>
     ) : null
 
+  const board = (boardSize: number) => {
+    if (live && !hasState) {
+      return (
+        <Text
+          testID="gameJoining"
+          style={[a.text_md, a.py_5xl, t.atoms.text_contrast_medium]}>
+          Joining match…
+        </Text>
+      )
+    }
+    const sendMove = (move: {type: string; args: Record<string, unknown>}) =>
+      clientRef.current?.sendMove(move)
+    if (G.kind === 'checkers') {
+      return (
+        <CheckersBoard
+          G={G}
+          ctx={ctx}
+          players={players}
+          seat={seat}
+          hotSeat={!live}
+          boardSize={boardSize}
+          onMove={(from, to) => sendMove({type: 'move', args: {from, to}})}
+          onNewGame={live ? undefined : onNewGame}
+        />
+      )
+    }
+    if (G.kind === 'chess') {
+      return (
+        <ChessBoard
+          G={G}
+          ctx={ctx}
+          players={players}
+          seat={seat}
+          hotSeat={!live}
+          boardSize={boardSize}
+          onMove={(from, to, promotion) =>
+            sendMove({
+              type: 'move',
+              args: promotion ? {from, to, promotion} : {from, to},
+            })
+          }
+          onNewGame={live ? undefined : onNewGame}
+        />
+      )
+    }
+    return (
+      <Board
+        G={G}
+        ctx={ctx}
+        players={players}
+        boardSize={boardSize}
+        onCellPress={cell => sendMove({type: 'place', args: {cell}})}
+        onNewGame={live ? undefined : onNewGame}
+      />
+    )
+  }
+
+  // GUEST landing spot after the match: a gentle pointer back to wherever the
+  // link came from (WhatsApp etc) — a guest has no account to keep browsing.
+  const guestDone =
+    isGuest && ctx.gameover ? (
+      <Text
+        testID="guestDoneHint"
+        style={[a.text_sm, a.pt_xs, t.atoms.text_contrast_medium]}>
+        ‹ Done — you can close this tab to get back to your chat.
+      </Text>
+    ) : null
+
+  // "New game" launcher: signed-in lobby only (a guest's token is scoped to
+  // one match; live rooms already have their game).
+  const launcher =
+    !live && !storyMode && !isGuest ? (
+      <View style={[a.align_center, a.gap_xs, a.pt_lg]}>
+        <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+          {creating ? 'Creating match…' : 'Start a live match'}
+        </Text>
+        <View style={[a.flex_row, a.gap_sm]}>
+          {GAME_KINDS.map(kind => (
+            <Button
+              key={kind}
+              testID={`newMatch-${kind}`}
+              label={`New live ${GAME_TITLES[kind]} match`}
+              color="secondary"
+              size="small"
+              disabled={creating !== null}
+              onPress={() => {
+                void onCreateMatch(kind)
+              }}>
+              <ButtonText>{GAME_TITLES[kind]}</ButtonText>
+            </Button>
+          ))}
+        </View>
+      </View>
+    ) : null
+
   const gamePane = (boardSize: number) =>
     storyMode ? (
       <View style={[a.flex_1, a.w_full]}>
@@ -255,14 +441,9 @@ function GameRoomInner({
     ) : (
       <View style={[a.align_center, a.gap_sm]}>
         {statusStrip}
-        <Board
-          G={G}
-          ctx={ctx}
-          players={players}
-          boardSize={boardSize}
-          onCellPress={onCellPress}
-          onNewGame={live ? undefined : onNewGame}
-        />
+        {board(boardSize)}
+        {guestDone}
+        {launcher}
       </View>
     )
 

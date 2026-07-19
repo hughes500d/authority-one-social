@@ -29,7 +29,8 @@ function harness(): {
     rosters,
     gameovers,
     callbacks: {
-      onState: (G, ctx) => states.push({G, ctx}),
+      // The union member for tic-tac-toe is TicTacToeG plus the kind tag.
+      onState: (G, ctx) => states.push({G: G as TicTacToeG, ctx}),
       onChat: m => chats.push(m),
       onPlayers: p => rosters.push(p),
       onGameover: w => gameovers.push(w),

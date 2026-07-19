@@ -33,6 +33,14 @@ export type CommonNavigatorParams = {
         mode?: string
         /** Requested seat for a live match ('0' default, '1' second player). */
         seat?: string
+        /** Which game the MOCK room plays ('tic-tac-toe' default | 'checkers' | 'chess').
+         *  A live match reports its game through the state frame instead. */
+        game?: string
+        /** GUEST capability token (match-scoped, validated server-side): a live
+         *  link carrying ?t= opens with NO login — see createNativeStackNavigatorWithAuth. */
+        t?: string
+        /** Guest display name (?name=, default "Guest"). */
+        name?: string
       }
     | undefined
   NewGroup: undefined

@@ -7,15 +7,29 @@
  * WIRE CONTRACT (v1, per pilot-agent-runtime/GAMES.md — the DO is live):
  *
  *   Client → server:
- *     {t: 'join', matchID: string, playerID: '0'|'1'|null, name: string}  // null = spectator
+ *     {t: 'join', matchID: string, playerID: '0'|'1'|null, name: string, token?: string}
+ *                                        // null playerID = spectator; token = GUEST capability token
+ *                                        // from a ?t= link (validated + match-scoped server-side)
  *     {t: 'move', move: {type: string, args: object}}   // tic-tac-toe: {type:'place', args:{cell:0-8}}
+ *                                        // checkers: {type:'move', args:{from,to}} (board indices 0-63)
+ *                                        // chess:    {type:'move', args:{from:'e2', to:'e4', promotion?}}
  *     {t: 'chat', text: string}
  *     {t: 'choice', id: string}          // STORY MODE: pick an authored branch (proposed v1 story ext)
  *
  *   Server → client:
- *     {t: 'state', G, ctx, players}      // authoritative snapshot; wire G={cells:[9]}, players is an
- *                                        // OBJECT keyed by playerID {name, connected} — the live client
- *                                        // maps both to the app shapes in types.ts
+ *     {t: 'state', G, ctx, players, legalMoves?, game?}
+ *                                        // authoritative snapshot; players is an OBJECT keyed by
+ *                                        // playerID {name, connected} — the live client maps everything
+ *                                        // to the app shapes in types.ts. Per game, wire G is:
+ *                                        //   tic-tac-toe: {cells:[9]}
+ *                                        //   checkers:    {board:[64 x (null|{player:0|1,king})],
+ *                                        //                 mustContinueFrom?} + legalMoves
+ *                                        //                 [{from,to,captures?}] for the side to move
+ *                                        //   chess:       {fen, check?, lastMove?} + legalMoves
+ *                                        //                 [{from,to,promotion?}] (algebraic squares)
+ *                                        // `game` names the match's game; when absent the client
+ *                                        // infers it from the G shape (fen → chess, 64 board →
+ *                                        // checkers, else tic-tac-toe)
  *     {t: 'chat', from, name, text, ts}  // from: '0'|'1'|'agent'|null (spectator)
  *     {t: 'players', players}            // presence roster changes
  *     {t: 'gameover', winner}            // winning playerID, or null for a draw
@@ -25,17 +39,22 @@
  *                                        // scene wholesale; no choices = free-text (chat) beat
  */
 import {createLiveGameClient} from './liveGameClient'
+import {MOCK_AGENT_ID, MOCK_AGENT_NAME} from './mockAgent'
+import {createMockCheckersClient} from './mockCheckersClient'
+import {createMockChessClient} from './mockChessClient'
 import {createMockStoryClient} from './mockStoryClient'
 import {applyPlace, gameoverOf, initialG} from './tictactoe'
 import {
   type GameClient,
   type GameClientOptions,
   type GameCtx,
+  type GameG,
   type GameMove,
   type PlayerInfo,
 } from './types'
 
 export * from './types'
+export {MOCK_AGENT_ID, MOCK_AGENT_NAME}
 
 /** Which transport a room runs on. The SCREEN decides (live iff it navigated
  *  in with a real server matchID), the factory just routes. */
@@ -64,13 +83,14 @@ export function createGameClient(
   if (transport === 'mock-story') {
     return createMockStoryClient(opts)
   }
+  if (opts.game === 'checkers') {
+    return createMockCheckersClient(opts)
+  }
+  if (opts.game === 'chess') {
+    return createMockChessClient(opts)
+  }
   return createMockGameClient(opts)
 }
-
-/** The agent commentator's sender id on the chat lane (mock). The live match
- *  carries `from: 'agent'` for the real commentator. */
-export const MOCK_AGENT_ID = 'agent:bob'
-export const MOCK_AGENT_NAME = 'Bob'
 
 const OPPONENT_NAME = 'Guest'
 
@@ -118,6 +138,7 @@ export function createMockGameClient(opts: GameClientOptions): GameClient {
     {id: playerID === '0' ? '1' : '0', name: OPPONENT_NAME},
   ]
 
+  const appG = (): GameG => ({kind: 'tic-tac-toe', ...G})
   const ctx = (): GameCtx => ({
     currentPlayer: G.currentPlayer,
     gameover: gameoverOf(G.board),
@@ -150,7 +171,7 @@ export function createMockGameClient(opts: GameClientOptions): GameClient {
       later(0, () => {
         callbacks.onConnection?.('online')
         callbacks.onPlayers(players)
-        callbacks.onState(G, ctx(), players)
+        callbacks.onState(appG(), ctx(), players)
         agentSay(OPENERS[Math.floor(Math.random() * OPENERS.length)], 900)
       })
     },
@@ -171,7 +192,7 @@ export function createMockGameClient(opts: GameClientOptions): GameClient {
       if (!next) return // invalid — authoritative server would drop it too
       G = next
       const over = gameoverOf(G.board)
-      later(0, () => callbacks.onState(G, ctx(), players))
+      later(0, () => callbacks.onState(appG(), ctx(), players))
       if (over && !gameoverSent) {
         gameoverSent = true
         later(0, () => callbacks.onGameover(over.winner))
