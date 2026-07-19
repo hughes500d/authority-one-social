@@ -365,6 +365,29 @@ describe('createLiveGameClient', () => {
     expect(h.histories).toHaveLength(1)
   })
 
+  it('queues chat typed while the socket is down and flushes after re-join', () => {
+    connect()
+    const first = FakeWebSocket.latest()
+    first.serverOpen()
+    first.serverSend(WIRE_STATE)
+    first.serverDrop()
+    // The composer already cleared — this text must not be lost.
+    client!.sendChat('did you see the ledger?')
+    jest.advanceTimersByTime(1000)
+    const second = FakeWebSocket.latest()
+    expect(second).not.toBe(first)
+    second.serverOpen()
+    // Not yet flushed: the server has not re-accepted us (no state frame).
+    expect(second.sent.filter(f => f.t === 'chat')).toHaveLength(0)
+    second.serverSend(WIRE_STATE)
+    expect(second.sent.filter(f => f.t === 'chat')).toEqual([
+      {t: 'chat', text: 'did you see the ledger?'},
+    ])
+    // Flushed once, not resent on the next state frame.
+    second.serverSend(WIRE_STATE)
+    expect(second.sent.filter(f => f.t === 'chat')).toHaveLength(1)
+  })
+
   it('falls back to the other seat, then spectator, on seat-taken', () => {
     const h = connect()
     const ws = FakeWebSocket.latest()

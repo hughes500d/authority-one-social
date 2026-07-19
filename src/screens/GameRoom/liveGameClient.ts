@@ -272,6 +272,11 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
 
   let ws: WebSocketLike | null = null
   let closedByUser = false
+  /** Chat typed while the socket was down (the composer clears immediately,
+   *  so a silent drop loses the words) — flushed once the server has
+   *  re-accepted us (first state frame after a join). Only chat is queued:
+   *  a stale move/choice against a changed board should NOT auto-fire. */
+  const pendingChat: string[] = []
   /** The seat we are currently claiming ('0' | '1' | null = spectator). */
   let seat: string | null = opts.playerID
   /** True once the server has accepted us into the room (first state frame). */
@@ -325,6 +330,9 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
         reconnectAttempt = 0
         callbacks.onConnection?.('online')
         callbacks.onState(G, ctx, mapWirePlayers(frame.players))
+        for (const text of pendingChat.splice(0)) {
+          send({t: 'chat', text})
+        }
         break
       }
       case 'players':
@@ -464,6 +472,10 @@ export function createLiveGameClient(opts: LiveGameClientOptions): GameClient {
     sendChat(text: string) {
       const trimmed = text.trim()
       if (!trimmed) return
+      if (!ws || ws.readyState !== WS_OPEN) {
+        pendingChat.push(trimmed)
+        return
+      }
       send({t: 'chat', text: trimmed})
     },
 

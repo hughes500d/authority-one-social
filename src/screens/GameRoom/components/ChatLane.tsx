@@ -47,8 +47,13 @@ export function ChatLane({
   }
 
   // Keep pinned to the newest message, same as the agent chat surface.
-  const onContentSizeChange = useCallback(() => {
-    scrollRef.current?.scrollToEnd({animated: true})
+  // NOT animated: a join-time chat-history replay lands as one batch while
+  // the scene pane above is still settling its height, and an animated
+  // scrollToEnd loses that race on web (lane stuck at the oldest message).
+  // Also re-pin on layout so lane resizes (keyboard, orientation) keep the
+  // newest message in view.
+  const pinToEnd = useCallback(() => {
+    scrollRef.current?.scrollToEnd({animated: false})
   }, [])
 
   return (
@@ -57,7 +62,8 @@ export function ChatLane({
         ref={scrollRef}
         style={[a.flex_1]}
         contentContainerStyle={[a.px_md, a.py_md, a.gap_sm, {flexGrow: 1}]}
-        onContentSizeChange={onContentSizeChange}
+        onContentSizeChange={pinToEnd}
+        onLayout={pinToEnd}
         keyboardDismissMode="interactive">
         {messages.length === 0 ? (
           <View style={[a.flex_1, a.align_center, a.justify_center]}>

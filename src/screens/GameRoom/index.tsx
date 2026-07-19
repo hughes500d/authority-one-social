@@ -485,7 +485,14 @@ function GameRoomInner({
     const boardSize = Math.min(gameColumnWidth - 96, height - 300, 440)
 
     return (
-      <Layout.Screen testID="gameRoomScreen">
+      // Web Layout.Screen is minHeight:100dvh — a floor, not a ceiling — so
+      // without a cap the CHAT LANE grows the page and pushes its own input
+      // off-screen (found live at phone width with a replayed chat ring). The
+      // room is a fixed split whose lanes scroll INTERNALLY: cap the screen at
+      // the viewport. Native already bounds (height:100%).
+      <Layout.Screen
+        testID="gameRoomScreen"
+        style={web({maxHeight: '100dvh', overflow: 'hidden'})}>
         {header}
         <View
           style={[
@@ -541,7 +548,14 @@ function GameRoomInner({
   const boardSize = Math.max(Math.min(width - 64, height * 0.36, 340), 200)
 
   return (
-    <Layout.Screen testID="gameRoomScreen">
+    // Web Layout.Screen is minHeight:100dvh — a floor, not a ceiling — so
+    // without a cap the CHAT LANE grows the page and pushes its own input
+    // off-screen (found live at phone width with a replayed chat ring). The
+    // room is a fixed split whose lanes scroll INTERNALLY: cap the screen at
+    // the viewport. Native already bounds (height:100%).
+    <Layout.Screen
+      testID="gameRoomScreen"
+      style={web({maxHeight: '100dvh', overflow: 'hidden'})}>
       {header}
       <View
         style={[
