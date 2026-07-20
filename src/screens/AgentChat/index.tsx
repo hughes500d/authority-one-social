@@ -39,7 +39,7 @@ import {
 import {usePersonasQuery} from '#/state/queries/personas'
 import {useThreadMembersQuery, useThreadsQuery} from '#/state/queries/threads'
 import {useSession} from '#/state/session'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {Image_Stroke2_Corner0_Rounded as ImageIcon} from '#/components/icons/Image'
 import {Microphone_Stroke2_Corner0_Rounded as MicIcon} from '#/components/icons/Microphone'
@@ -701,6 +701,10 @@ function AgentChatScreenInner({
               t.atoms.bg_contrast_25,
               t.atoms.text,
               {maxHeight: 120},
+              // Sub-16px inputs trigger iOS Safari's focus auto-zoom, which
+              // outlives the keyboard and clips the layout's right edge (found
+              // live in the GameRoom chat lane — same composer recipe here).
+              web({fontSize: 16}),
             ]}
             onSubmitEditing={() => doSend(input)}
             editable={!voiceModeOn}

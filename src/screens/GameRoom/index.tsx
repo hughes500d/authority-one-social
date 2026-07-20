@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import {useWindowDimensions, View} from 'react-native'
+import {ScrollView, useWindowDimensions, View} from 'react-native'
 import {useNavigation} from '@react-navigation/native'
 
 import {type ChatMessage} from '#/lib/agent-runtime'
@@ -39,6 +39,7 @@ import {
   type PlayerInfo,
   type SceneFrame,
 } from './gameClient'
+import {gameoverPanelMode} from './gameoverPanel'
 import {initialG} from './tictactoe'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'GameRoom'>
@@ -439,6 +440,49 @@ function GameRoomInner({
     )
   }
 
+  // HONEST endgame affordance for LIVE board rooms: the server has no reset,
+  // so a finished match is final — the agent cannot restart it from chat, and
+  // the UI must not imply anyone can. State that plainly, then offer only what
+  // is real: signed-in viewers can start a FRESH match (same create path as
+  // the lobby launcher); a guest's token is scoped to this one match, so their
+  // truthful next step is a fresh link from their host.
+  const panelMode = gameoverPanelMode({
+    live,
+    storyMode,
+    hasState,
+    gameover: !!ctx.gameover,
+    isGuest,
+  })
+  const gameoverPanel =
+    panelMode === 'none' ? null : (
+      <View style={[a.align_center, a.gap_xs, a.pt_sm, a.px_lg]}>
+        <Text
+          testID="gameoverFinalText"
+          style={[a.text_sm, a.text_center, t.atoms.text_contrast_medium]}>
+          {panelMode === 'guest-hint'
+            ? 'This match is over — it can’t be restarted. Ask for a fresh link to play again.'
+            : 'This match is over — it can’t be restarted.'}
+        </Text>
+        {panelMode === 'new-match' ? (
+          <Button
+            testID="gameoverNewMatchBtn"
+            label={`Start a new ${GAME_TITLES[G.kind]} match`}
+            color="primary"
+            size="small"
+            disabled={creating !== null}
+            onPress={() => {
+              void onCreateMatch(G.kind)
+            }}>
+            <ButtonText>
+              {creating
+                ? 'Creating match…'
+                : `New ${GAME_TITLES[G.kind]} match`}
+            </ButtonText>
+          </Button>
+        ) : null}
+      </View>
+    )
+
   // GUEST landing spot after the match: a gentle pointer back to wherever the
   // link came from (WhatsApp etc) — a guest has no account to keep browsing.
   const guestDone =
@@ -458,7 +502,14 @@ function GameRoomInner({
         <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
           {creating ? 'Creating match…' : 'Start a live match'}
         </Text>
-        <View style={[a.flex_row, a.gap_sm]}>
+        <View
+          style={[
+            a.flex_row,
+            a.flex_wrap,
+            a.justify_center,
+            a.gap_sm,
+            a.px_lg,
+          ]}>
           {LAUNCH_KINDS.map(kind => (
             <Button
               key={kind}
@@ -503,6 +554,7 @@ function GameRoomInner({
       <View style={[a.align_center, a.gap_sm]}>
         {statusStrip}
         {board(boardSize)}
+        {gameoverPanel}
         {guestDone}
         {launcher}
       </View>
@@ -603,7 +655,16 @@ function GameRoomInner({
             {gamePane(boardSize)}
           </View>
         ) : (
-          <View style={[a.py_lg, a.align_center]}>{gamePane(boardSize)}</View>
+          // Landscape phones (short viewports) can't fit the whole game pane
+          // above the chat lane — without a cap it filled the clipped screen
+          // and pushed the chat input clean off the bottom (found live).
+          // Cap the pane at half the viewport and let IT scroll internally;
+          // tall (portrait) viewports keep their natural layout.
+          <ScrollView
+            style={[{flexGrow: 0}, height < 500 && {maxHeight: height * 0.5}]}
+            contentContainerStyle={[a.py_lg, a.align_center]}>
+            {gamePane(boardSize)}
+          </ScrollView>
         )}
         <View style={[a.flex_1, a.border_t, t.atoms.border_contrast_low]}>
           {chatLane}

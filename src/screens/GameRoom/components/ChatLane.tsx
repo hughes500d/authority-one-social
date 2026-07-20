@@ -4,7 +4,7 @@ import {ScrollView, TextInput, View} from 'react-native'
 import {type ChatMessage} from '#/lib/agent-runtime'
 import {isSelfSender} from '#/screens/AgentChat/attribution'
 import {MessageBubble} from '#/screens/AgentChat/MessageBubble'
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {PaperPlaneVertical_Filled_Stroke2_Corner1_Rounded as SendIcon} from '#/components/icons/PaperPlane'
 import {Text} from '#/components/Typography'
@@ -118,6 +118,11 @@ export function ChatLane({
             t.atoms.bg_contrast_25,
             t.atoms.text,
             {maxHeight: 100},
+            // iOS Safari auto-zooms the page when a focused input's font is
+            // under 16px, and the zoom outlives the keyboard — with this
+            // screen's overflow:hidden viewport cap that clipped the whole
+            // right edge (send button, own bubbles). 16px disarms the zoom.
+            web({fontSize: 16}),
           ]}
           onSubmitEditing={doSend}
           blurOnSubmit={false}
