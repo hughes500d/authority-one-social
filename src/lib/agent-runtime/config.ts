@@ -266,6 +266,14 @@ export const voiceDeleteUrl = (id: string) =>
  * degrades to "no preview available", never an error state for the picker itself.
  */
 export const VOICES_PREVIEW_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/voices/preview`
+/**
+ * Voice as a FIRST-CLASS AGENT ATTRIBUTE (runtime 06ea03c): POST {agent?,
+ * voiceId, name?} assigns the voice one owned agent speaks with; voiceId:null
+ * clears it (falls back to the active persona's legacy voice). Wins over the
+ * persona voiceId at every spoken surface. 422 voice-not-found on a definite
+ * unknown id; 403 not-your-agent via the shared ownership gate.
+ */
+export const AGENTS_VOICE_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/agents/voice`
 
 /**
  * Social-autonomy config endpoint (owner-scoped, agent-scoped like the persona

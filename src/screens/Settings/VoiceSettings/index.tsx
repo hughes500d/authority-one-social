@@ -97,7 +97,9 @@ export function VoiceSettingsScreen({route}: Props) {
   const activePersona = personas.data?.personas.find(
     p => p.id === personas.data?.activePersonaId,
   )
-  const storedVoiceId = activePersona?.voiceId ?? personas.data?.activeVoiceId
+  // activeVoiceId first: the runtime folds the agent-level voice attribute into
+  // it (attribute > persona voice), so it is the authoritative "sounds like now".
+  const storedVoiceId = personas.data?.activeVoiceId ?? activePersona?.voiceId
   const assignedVoice = findAssignedVoice(
     voices,
     registryOptions,
@@ -117,6 +119,8 @@ export function VoiceSettingsScreen({route}: Props) {
     : undefined
 
   const onUse = (voice: LibraryVoice) => {
+    // personaId is only the LEGACY fallback target (pre-06ea03c runtime); the
+    // primary path assigns the agent-level voice attribute.
     const personaId = personas.data?.activePersonaId
     if (!personaId) return
     assign.mutate(

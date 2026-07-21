@@ -1,6 +1,10 @@
 import {logger} from '#/logger'
 import {getSupabaseAccessToken} from './authToken'
-import {VOICES_ENDPOINT, VOICES_PREVIEW_ENDPOINT} from './config'
+import {
+  AGENTS_VOICE_ENDPOINT,
+  VOICES_ENDPOINT,
+  VOICES_PREVIEW_ENDPOINT,
+} from './config'
 import {bytesToBase64} from './tts'
 import {type VoicePickOption} from './voicesClient'
 
@@ -229,7 +233,20 @@ export async function fetchVoicePreviewClip(
     const contentType = res.headers.get('content-type') ?? ''
     if (contentType.includes('application/json')) {
       const j = (await res.json().catch(() => ({}))) as Record<string, unknown>
-      return str(j.audio) ?? str(j.base64) ?? str(j.clip) ?? null
+      const inline = str(j.audio) ?? str(j.base64) ?? str(j.clip)
+      if (inline) return inline
+      // The runtime answers {previewUrl} when ElevenLabs ships a hosted sample
+      // (no synthesis spent) — fetch it and hand back the same base64 shape.
+      const previewUrl = str(j.previewUrl) ?? str(j.preview_url)
+      if (previewUrl) {
+        const clip = await fetch(previewUrl)
+        if (!clip.ok) return null
+        const bytes = await clip.arrayBuffer()
+        return bytes && bytes.byteLength > 0
+          ? bytesToBase64(new Uint8Array(bytes))
+          : null
+      }
+      return null
     }
     const buf = await res.arrayBuffer()
     if (!buf || buf.byteLength === 0) return null
@@ -237,5 +254,64 @@ export async function fetchVoicePreviewClip(
   } catch (e) {
     logger.warn('voice library: preview synth failed', {safeMessage: String(e)})
     return null
+  }
+}
+
+/** Result of POST /app/agents/voice. `unsupported` = the runtime predates the
+ *  route (plain 404), so callers can fall back to the persona voiceId path. */
+export interface SetAgentVoiceResult {
+  ok: boolean
+  signedOut: boolean
+  unsupported?: boolean
+  code?: string
+  error?: string
+}
+
+/**
+ * POST /app/agents/voice {agent?, voiceId} — assign the voice this agent SPEAKS
+ * with, as a first-class agent attribute (wins over the persona voiceId at every
+ * spoken surface; runtime verifies the id against ElevenLabs — a definite
+ * unknown id is a 422 voice-not-found). Never throws.
+ */
+export async function setAgentVoice(input: {
+  agent?: string
+  voiceId: string
+}): Promise<SetAgentVoiceResult> {
+  try {
+    const headers = await authHeaders()
+    if (!headers) return {ok: false, signedOut: true}
+    const res = await fetch(AGENTS_VOICE_ENDPOINT, {
+      method: 'POST',
+      headers: {...headers, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        voiceId: input.voiceId,
+        ...(input.agent ? {agent: input.agent} : {}),
+      }),
+    })
+    const j = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    if (res.ok) return {ok: true, signedOut: false}
+    const code = str(j.code)
+    if ((res.status === 401 || res.status === 403) && !code) {
+      return {ok: false, signedOut: true}
+    }
+    // A codeless 404 is a runtime that predates the route — NOT a user error.
+    if (res.status === 404 && !code) {
+      return {ok: false, signedOut: false, unsupported: true}
+    }
+    return {
+      ok: false,
+      signedOut: false,
+      code,
+      error: str(j.error) ?? str(j.message) ?? `Runtime error ${res.status}`,
+    }
+  } catch (e) {
+    logger.warn('voice library: set agent voice failed', {
+      safeMessage: String(e),
+    })
+    return {
+      ok: false,
+      signedOut: false,
+      error: errorMessage(e) ?? 'network error',
+    }
   }
 }

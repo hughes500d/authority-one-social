@@ -269,6 +269,8 @@ export {
   type LibraryVoice,
   normalizeLibraryVoice,
   normalizeVoiceLibrary,
+  setAgentVoice,
+  type SetAgentVoiceResult,
   underlyingVoiceId,
   VOICE_FILTER_KEYS,
   type VoiceFilterKey,
