@@ -98,6 +98,9 @@ export type CommonNavigatorParams = {
   // Authority One: upload text files into an agent's long-term memory (knowledge-base
   // file slots). Same agent-scoping as personas.
   KnowledgeBaseSettings: {agent?: string} | undefined
+  // Authority One: browse the voice library, preview samples, and assign the
+  // agent's spoken voice. Same agent-scoping as personas.
+  VoiceSettings: {agent?: string} | undefined
   // Authority One: list of ALL the owner's agents (number, live state, persona entry).
   MyAgents: undefined
   // Authority One: per-agent usage rollup ("agent burn") across ALL owned agents.

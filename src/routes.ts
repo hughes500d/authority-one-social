@@ -60,6 +60,7 @@ export const router = new Router<AllNavigatableRoutes>({
     '/settings/social-autonomy/:agent',
   ],
   KnowledgeBaseSettings: ['/settings/knowledge', '/settings/knowledge/:agent'],
+  VoiceSettings: ['/settings/voice', '/settings/voice/:agent'],
   MyAgents: '/settings/agents',
   AgentUsage: '/settings/agents/usage',
   AgentBilling: '/settings/agents/billing',

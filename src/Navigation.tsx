@@ -138,6 +138,7 @@ import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSec
 import {SettingsScreen} from '#/screens/Settings/Settings'
 import {SocialAutonomySettingsScreen} from '#/screens/Settings/SocialAutonomySettings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
+import {VoiceSettingsScreen} from '#/screens/Settings/VoiceSettings'
 import {
   StarterPackScreen,
   StarterPackScreenShort,
@@ -477,6 +478,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => KnowledgeBaseSettingsScreen}
         options={{
           title: title(msg`Knowledge base`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="VoiceSettings"
+        getComponent={() => VoiceSettingsScreen}
+        options={{
+          title: title(msg`Voice`),
           requireAuth: true,
         }}
       />

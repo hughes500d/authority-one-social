@@ -31,6 +31,7 @@ import {PageText_Stroke2_Corner0_Rounded as PageTextIcon} from '#/components/ico
 import {PencilLine_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
+import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as SpeakerIcon} from '#/components/icons/Speaker'
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
 import * as Prompt from '#/components/Prompt'
@@ -74,6 +75,13 @@ export function PersonaSettingsScreen({route}: Props) {
     ? voicePickOptions(voiceRegistry.data)
     : []
   const activeId = data?.activePersonaId
+  // The Voice row shows what the agent sounds like right now — resolved from the
+  // active persona's stored voiceId across all three stored forms.
+  const activeStoredVoiceId =
+    personas.find(p => p.id === activeId)?.voiceId ?? data?.activeVoiceId
+  const activeVoiceName =
+    voiceDisplayLabel(registryOptions, activeStoredVoiceId) ??
+    voices.find(v => v.voiceId === activeStoredVoiceId)?.name
   const canDelete = personas.length > 1
   const agentRow = agent
     ? ownerAgents.data?.agents.find(
@@ -150,6 +158,26 @@ export function PersonaSettingsScreen({route}: Props) {
                 <SettingsList.ItemText>
                   <Trans>Social autonomy</Trans>
                 </SettingsList.ItemText>
+                <SettingsList.Chevron />
+              </SettingsList.PressableItem>
+              <SettingsList.PressableItem
+                label={l`Voice`}
+                accessibilityHint={l`Pick the voice this agent speaks with`}
+                onPress={() =>
+                  navigation.navigate(
+                    'VoiceSettings',
+                    agent ? {agent} : undefined,
+                  )
+                }>
+                <SettingsList.ItemIcon icon={SpeakerIcon} />
+                <SettingsList.ItemText>
+                  <Trans>Voice</Trans>
+                </SettingsList.ItemText>
+                {activeVoiceName ? (
+                  <SettingsList.BadgeText>
+                    {activeVoiceName}
+                  </SettingsList.BadgeText>
+                ) : null}
                 <SettingsList.Chevron />
               </SettingsList.PressableItem>
               <SettingsList.PressableItem

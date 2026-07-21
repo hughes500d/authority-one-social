@@ -259,6 +259,13 @@ export const VOICES_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/voices`
 /** DELETE /app/voices/:id — remove a custom voice from the library. */
 export const voiceDeleteUrl = (id: string) =>
   `${VOICES_ENDPOINT}/${encodeURIComponent(id)}`
+/**
+ * POST /app/voices/preview {voiceId, text?} — synthesize a short sample for a
+ * library voice that has no hosted previewUrl. Returns MP3 bytes (or JSON with a
+ * base64 clip — the client accepts both). Preview is an enhancement: any failure
+ * degrades to "no preview available", never an error state for the picker itself.
+ */
+export const VOICES_PREVIEW_ENDPOINT = `${AGENT_RUNTIME_BASE_URL}/app/voices/preview`
 
 /**
  * Social-autonomy config endpoint (owner-scoped, agent-scoped like the persona

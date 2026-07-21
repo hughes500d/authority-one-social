@@ -261,6 +261,23 @@ export {
   type VideoUploadResult,
 } from './videoUploadClient'
 export {
+  fetchVoiceLibrary,
+  fetchVoicePreviewClip,
+  filterVoices,
+  findAssignedVoice,
+  formatLabelValue,
+  type LibraryVoice,
+  normalizeLibraryVoice,
+  normalizeVoiceLibrary,
+  underlyingVoiceId,
+  VOICE_FILTER_KEYS,
+  type VoiceFilterKey,
+  type VoiceFilters,
+  voiceLabelSummary,
+  voiceLabelValues,
+  type VoiceLibraryResult,
+} from './voiceLibraryClient'
+export {
   addLibraryVoice,
   type BuiltinVoice,
   type CustomVoice,
